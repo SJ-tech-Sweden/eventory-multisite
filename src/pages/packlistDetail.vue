@@ -213,6 +213,4 @@ onMounted(() => {
 
   &.q-table--loading thead tr:last-child th
     top: 48px
-
-  tbody
 </style>
