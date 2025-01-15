@@ -36,6 +36,7 @@ export default [
   ...pluginVue.configs['flat/essential'],
 
   {
+    files: ['**/*.test.js', '**/*.spec.js'],
     plugins: {
       jest: pluginJest,
     },
@@ -52,6 +53,7 @@ export default [
         Capacitor: 'readonly',
         chrome: 'readonly', // BEX related
         browser: 'readonly', // BEX related
+        ...globals.jest,
       },
     },
 
