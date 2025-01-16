@@ -4,7 +4,7 @@
 
 A project to view multiple eventory oganisations at once
 
-One deployed version exists at eventory.sj-tech.se [eventory.sj-tech.se](https://eventory.sj-tech.se)
+One deployed version exists at [eventory.sj-tech.se](https://eventory.sj-tech.se)
 
 ## Install the dependencies
 
