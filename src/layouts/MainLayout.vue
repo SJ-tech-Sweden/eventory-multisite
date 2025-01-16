@@ -36,6 +36,13 @@
           <q-item-section>Calendar</q-item-section>
         </q-item>
 
+        <q-item clickable to="/inventory">
+          <q-item-section avatar>
+            <q-icon name="warehouse" />
+          </q-item-section>
+          <q-item-section>Inventory</q-item-section>
+        </q-item>
+
         <q-item clickable to="/login-manager">
           <q-item-section avatar>
             <q-icon name="manage_accounts" />
