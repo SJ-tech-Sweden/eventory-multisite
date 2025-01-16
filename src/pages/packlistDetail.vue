@@ -22,6 +22,7 @@
             dataKey="id"
             autoLayout
             :expandedKeys="expandedKeys"
+            class="q-table highlight striped-odd"
           >
             <Column field="name" header="Name" expander sortable></Column>
             <Column field="dailyRate" header="Daily rate" sortable></Column>
@@ -39,6 +40,7 @@
             dataKey="id"
             autoLayout
             :expandedKeys="expandedKeys"
+            class="q-table highlight striped-odd"
           >
             <Column field="name" header="Name" expander sortable></Column>
             <Column field="dailyRate" header="Daily rate" sortable></Column>
@@ -56,6 +58,7 @@
             dataKey="id"
             autoLayout
             :expandedKeys="expandedKeys"
+            class="q-table highlight striped-odd"
           >
             <Column field="name" header="Name" expander sortable></Column>
             <Column field="dailyRate" header="Daily rate" sortable></Column>
@@ -64,6 +67,7 @@
             <Column field="supplier" header="Supplier" sortable></Column>
             <Column field="note" header="Note" sortable></Column>
           </TreeTable>
+
           <div class="text-h6">External subrentals</div>
           <TreeTable
             :value="packlist.externalSubrentals"
@@ -73,6 +77,7 @@
             dataKey="id"
             autoLayout
             :expandedKeys="expandedKeys"
+            class="q-table highlight striped-odd"
           >
             <Column field="name" header="Name" expander sortable></Column>
             <Column field="dailyRate" header="Daily rate" sortable></Column>
@@ -198,19 +203,4 @@ onMounted(() => {
 }
 </style>
 
-<style lang="sass">
-.my-sticky-header-table
-  .q-table__top,
-  .q-table__bottom,
-  thead tr:first-child th
-    background-color: #00b4ff
-
-  thead tr th
-    position: sticky
-    z-index: 1
-  thead tr:first-child th
-    top: 0
-
-  &.q-table--loading thead tr:last-child th
-    top: 48px
-</style>
+<style lang="sass"></style>

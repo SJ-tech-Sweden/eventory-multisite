@@ -141,7 +141,7 @@ const getEventColor = (date) => {
   const formattedDate = date.replace(/\//g, '-') // Format input date if needed
   console.info(`formattedDate: ${formattedDate}`)
   const matchingEvent = events.value.find((event) => event.startDate === formattedDate)
-  console.info(`Matching events: ${JSON.stringify(matchingEvent.color)}`)
+  console.info(`Matching events: ${matchingEvent.color}`)
   return matchingEvent.color || 'primary'
 }
 
