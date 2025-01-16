@@ -4,6 +4,8 @@
 
 A project to view multiple eventory oganisations at once
 
+Under Login manager you can add your logins from the different organisations. Calendar is a calendar view that combines the job from all your logins so that you can view them from one place, nothing is editable at this time.
+
 One deployed version exists at [eventory.sj-tech.se](https://eventory.sj-tech.se)
 
 ## Install the dependencies
