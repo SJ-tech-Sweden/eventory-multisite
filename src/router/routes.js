@@ -11,6 +11,10 @@ const routes = [
         path: '/packlist/:packlistid/:userid',
         component: () => import('pages/packlistDetail.vue'),
       },
+      {
+        path: '/inventory-detail/:packlistid/:userid',
+        component: () => import('pages/inventoryDetail.vue'),
+      },
     ],
   },
 
