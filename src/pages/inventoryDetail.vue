@@ -14,7 +14,7 @@
     </q-card>
 
     <q-card v-else>
-      <q-card-section v-if="inventoryItem && inventoryItem.rental">
+      <q-card-section v-if="inventoryItem && inventoryItem.rental" class="relative-position">
         <div class="text-h6">{{ inventoryItem.rental.name }}</div>
         <q-img :src="inventoryItem.rental.imageUrl" alt="Item Image" width="300px" />
         <div>Description: {{ inventoryItem.rental.description }}</div>
@@ -26,6 +26,9 @@
         <div>Tenant: {{ inventoryItem.rental.tenant }}</div>
         <div>Updated At: {{ new Date(inventoryItem.rental.updated_at).toLocaleString() }}</div>
         <div>Created At: {{ new Date(inventoryItem.rental.created_at).toLocaleString() }}</div>
+        <q-avatar class="responsive-avatar" size="100px">
+          <q-img :src="login.organisationLogo"></q-img>
+        </q-avatar>
       </q-card-section>
     </q-card>
 
@@ -84,6 +87,7 @@ const route = useRoute()
 const inventoryItem = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const login = ref(null)
 
 const fetchInventoryItem = async () => {
   const inventoryId = route.params.inventoryid
@@ -96,16 +100,16 @@ const fetchInventoryItem = async () => {
   const userIdStr = String(userId)
 
   // Find the corresponding login
-  const login = loginStore.logins.find((login) => String(login.id) === userIdStr)
+  login.value = loginStore.logins.find((login) => String(login.id) === userIdStr)
 
-  if (!login) {
+  if (!login.value) {
     console.error('Login not found for userId:', userId)
     return
   }
   try {
     const response = await axios.get(`/api/rentals/${inventoryId}`, {
       headers: {
-        Authorization: `Bearer ${login.access_token}`,
+        Authorization: `Bearer ${login.value.access_token}`,
       },
     })
     console.info('Fetched inventoryItem:', response.data)
@@ -122,3 +126,23 @@ onMounted(() => {
   fetchInventoryItem()
 })
 </script>
+
+<style scoped>
+.relative-position {
+  position: relative;
+}
+
+.responsive-avatar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+@media (max-width: 600px) {
+  .responsive-avatar {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+  }
+}
+</style>
