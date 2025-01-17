@@ -5,11 +5,13 @@
         <q-icon v-if="filter !== ''" name="clear" class="cursor-pointer" @click="resetFilter" />
       </template>
     </q-input>
+    <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
     <q-tree
       :nodes="filteredInventory"
       node-key="id"
       :key="filteredInventory.length"
       :filter-method="filterMethod"
+      ref="inventoryTree"
     >
       <template v-slot:default-header="scope">
         <q-item @click="navigateToInventoryDetail(scope.node)">
@@ -34,6 +36,9 @@ const loginStore = useLoginStore()
 const router = useRouter()
 const filter = ref('')
 const filterRef = ref(null)
+const inventoryTree = ref(null)
+const isExpanded = ref(false)
+const expandAllLabel = ref('Expand All')
 
 const addPropertiesToTree = (nodes, properties) => {
   return nodes.map((node) => {
@@ -103,6 +108,21 @@ const filterNodes = (nodes, filter) => {
       return null
     })
     .filter((node) => node !== null)
+}
+
+const toggleExpandAll = () => {
+  if (isExpanded.value) {
+    if (inventoryTree.value) {
+      inventoryTree.value.expandAll()
+      expandAllLabel.value = 'Collapse All'
+    }
+  } else {
+    if (inventoryTree.value) {
+      inventoryTree.value.collapseAll()
+      expandAllLabel.value = 'Expand All'
+    }
+  }
+  isExpanded.value = !isExpanded.value
 }
 
 const filteredInventory = computed(() => {
