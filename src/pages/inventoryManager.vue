@@ -12,6 +12,8 @@
       :key="filteredInventory.length"
       :filter-method="filterMethod"
       ref="inventoryTree"
+      v-model:expanded="expandedKeys"
+      @update:expanded="handleExpandedKeys"
     >
       <template v-slot:default-header="scope">
         <q-item @click="navigateToInventoryDetail(scope.node)">
@@ -38,7 +40,7 @@ const filter = ref('')
 const filterRef = ref(null)
 const inventoryTree = ref(null)
 const isExpanded = ref(false)
-const expandAllLabel = ref('Expand All')
+const expandedKeys = ref([])
 
 const addPropertiesToTree = (nodes, properties) => {
   return nodes.map((node) => {
@@ -111,18 +113,28 @@ const filterNodes = (nodes, filter) => {
 }
 
 const toggleExpandAll = () => {
-  if (isExpanded.value) {
+  if (!isExpanded.value) {
     if (inventoryTree.value) {
       inventoryTree.value.expandAll()
-      expandAllLabel.value = 'Collapse All'
     }
   } else {
     if (inventoryTree.value) {
       inventoryTree.value.collapseAll()
-      expandAllLabel.value = 'Expand All'
     }
   }
-  isExpanded.value = !isExpanded.value
+}
+
+const expandAllLabel = computed(() => {
+  if (isExpanded.value) {
+    return 'Collapse All'
+  }
+  return 'Expand All'
+})
+
+const handleExpandedKeys = () => {
+  console.info('Expanded keys:', expandedKeys.value)
+  isExpanded.value = Object.keys(expandedKeys.value).length > 0
+  console.info('isExpanded:', isExpanded.value)
 }
 
 const filteredInventory = computed(() => {
