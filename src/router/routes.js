@@ -12,7 +12,7 @@ const routes = [
         component: () => import('pages/packlistDetail.vue'),
       },
       {
-        path: '/inventory-detail/:packlistid/:userid',
+        path: '/inventory-detail/:inventoryid/:userid',
         component: () => import('pages/inventoryDetail.vue'),
       },
     ],

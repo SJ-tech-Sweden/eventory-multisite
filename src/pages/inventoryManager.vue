@@ -16,10 +16,7 @@
       @update:expanded="handleExpandedKeys"
     >
       <template v-slot:default-header="scope">
-        <q-item @click="navigateToInventoryDetail(scope.node)">
-          <q-item-section avatar>
-            <q-avatar :src="scope.node.organisationLogo" />
-          </q-item-section>
+        <q-item @click="navigateToInventoryDetail(scope.node)" clickable>
           <q-item-section>{{ scope.node.name }} - {{ scope.node.organisation }}</q-item-section>
         </q-item>
       </template>
@@ -81,6 +78,7 @@ const fetchInventory = async () => {
 }
 
 const navigateToInventoryDetail = (node) => {
+  console.info('Navigating to inventory detail:', node)
   if (!node.children || node.children.length === 0) {
     router.push(`/inventory-detail/${node.id}/${node.userid}`)
   }
