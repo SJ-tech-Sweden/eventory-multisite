@@ -910,6 +910,18 @@
   resolved "https://registry.npmjs.org/@quasar/extras/-/extras-1.16.15.tgz"
   integrity sha512-ZM8rUAagZ3Gm7Thu6DjKdGfkyFBv61RaCeVSIWdve6+q300yN+6aouxttf2RmxCk12RsSqEyzBnIg7BlF1s7MA==
 
+"@quasar/quasar-app-extension-qcalendar@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@quasar/quasar-app-extension-qcalendar/-/quasar-app-extension-qcalendar-4.0.1.tgz#a344d3023256949b4fed1536cff22d98d23e5985"
+  integrity sha512-JYN1Ectuih72+hEgfwoudhgcK8qCmolbuI5EvMeWiU6wUMdpAzdwlP4lGrFSVE5t8/+vNWKWS32R+70XM8pilQ==
+  dependencies:
+    "@quasar/quasar-ui-qcalendar" "^4.0.1"
+
+"@quasar/quasar-ui-qcalendar@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@quasar/quasar-ui-qcalendar/-/quasar-ui-qcalendar-4.0.1.tgz#9329dfb4f0911999fd09c931f7930dc4c32a7d1d"
+  integrity sha512-m2Ijohb1mAuAdj7pxWBPKSTDNd2Fb2E9aSUyXWApNoZH63XszY8b0n7tlxyH/PUygGXt1/TNx2QSI1j/upGE6A==
+
 "@quasar/render-ssr-error@^1.0.3":
   version "1.0.3"
   resolved "https://registry.npmjs.org/@quasar/render-ssr-error/-/render-ssr-error-1.0.3.tgz"

@@ -32,6 +32,42 @@
       </q-card-section>
     </q-card>
 
+    <q-card v-if="!loading">
+      <q-card-section>
+        <div class="text-h6">Calendar View</div>
+        <div class="q-gutter-sm">
+          <q-btn label="Today" @click="goToToday" />
+          <q-btn label="Previous Month" @click="goToPreviousMonth" />
+          <q-btn label="Next Month" @click="goToNextMonth" />
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; flex-wrap: nowrap">
+          <div style="font-size: 2em">{{ formattedMonth }}</div>
+        </div>
+        <q-calendar-month
+          ref="calendar"
+          v-model="calendarDate"
+          :events="calendarEvents"
+          :weekdays="[1, 2, 3, 4, 5, 6, 0]"
+          :day-min-height="40"
+          date-align="right"
+          animated
+          bordered
+          use-navigation
+        >
+          <template v-slot:day="{ scope }">
+            <div
+              v-for="event in getEventsForDate(scope.timestamp.date)"
+              :key="event.id"
+              class="event"
+              :style="{ backgroundColor: event.color }"
+            >
+              <div>{{ event.title }}</div>
+            </div>
+          </template>
+        </q-calendar-month>
+      </q-card-section>
+    </q-card>
+
     <q-card
       v-if="inventoryItem && inventoryItem.activePackLists && inventoryItem.activePackLists.length"
     >
@@ -77,10 +113,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { QCalendarMonth } from '@quasar/quasar-ui-qcalendar'
 
 const loginStore = useLoginStore()
 const route = useRoute()
@@ -88,6 +125,9 @@ const inventoryItem = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const login = ref(null)
+const calendarDate = ref(new Date().toISOString().substr(0, 10))
+const calendarEvents = ref([])
+const calendar = ref(null)
 
 const fetchInventoryItem = async () => {
   const inventoryId = route.params.inventoryid
@@ -114,12 +154,121 @@ const fetchInventoryItem = async () => {
     })
     console.info('Fetched inventoryItem:', response.data)
     inventoryItem.value = response.data
+    calculateCalendarEvents()
   } catch (error) {
     error.value = error.message
     console.error('Failed to fetch inventoryItem:', error)
   } finally {
     loading.value = false
   }
+}
+
+const calculateCalendarEvents = () => {
+  if (!inventoryItem.value) return
+
+  const events = []
+
+  const addEventPacklist = (packList) => {
+    events.push({
+      id: packList.packListId,
+      name: `${packList.packListName} (${packList.quantity})`,
+      start: packList.startDate,
+      end: packList.endDate,
+      color: 'blue',
+    })
+  }
+
+  inventoryItem.value.activePackLists.forEach(addEventPacklist)
+  inventoryItem.value.archivedPackLists.forEach(addEventPacklist)
+
+  console.info(`Events: ${JSON.stringify(events)}`)
+  calendarEvents.value = events
+}
+
+const formattedMonth = computed(() => {
+  const date = new Date(calendarDate.value)
+  const formatter = monthFormatter()
+  return formatter ? formatter.format(date) + ' ' + date.getFullYear() : ''
+})
+
+function monthFormatter() {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      timeZone: 'UTC',
+    })
+  } catch {
+    //
+  }
+}
+
+function goToToday() {
+  if (calendar.value) {
+    calendar.value.moveToToday()
+  }
+}
+
+function goToPreviousMonth() {
+  if (calendar.value) {
+    calendar.value.prev()
+  }
+}
+
+function goToNextMonth() {
+  if (calendar.value) {
+    calendar.value.next()
+  }
+}
+
+const getEventsForDate = (date) => {
+  const dateStr = date
+  let quantity = inventoryItem.value.rental.stockLevel
+
+  inventoryItem.value.activePackLists.forEach((packList) => {
+    if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
+      quantity -= packList.quantity
+    }
+  })
+  inventoryItem.value.archivedPackLists.forEach((packList) => {
+    if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
+      quantity -= packList.quantity
+    }
+  })
+  const eventForDay = []
+  const stockLevel = {
+    title: `Available: ${quantity}`,
+    date: date,
+    color: quantity > 0 ? 'green' : quantity === 0 ? 'orange' : 'red',
+  }
+
+  inventoryItem.value.activePackLists.forEach((packList) => {
+    if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
+      eventForDay.push({
+        id: packList.packListId,
+        title: `${packList.jobName} - ${packList.packListName} (${packList.quantity})`,
+        start: packList.startDate,
+        end: packList.endDate,
+        color: 'blue',
+      })
+    }
+  })
+
+  inventoryItem.value.archivedPackLists.forEach((packList) => {
+    if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
+      eventForDay.push({
+        id: packList.packListId,
+        title: `${packList.jobName} - ${packList.packListName} (${packList.quantity})`,
+        start: packList.startDate,
+        end: packList.endDate,
+        color: 'grey',
+      })
+    }
+  })
+
+  eventForDay.push(stockLevel)
+  console.info(eventForDay)
+
+  return eventForDay
 }
 
 onMounted(() => {
