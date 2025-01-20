@@ -37,33 +37,36 @@
                   </template>
                 </q-input>
                 <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
-                <q-tree
-                  :nodes="filteredInventory"
-                  node-key="id"
-                  :key="filteredInventory.length"
-                  :filter-method="filterMethod"
-                  ref="inventoryTree"
-                  v-model:expanded="expandedKeysInventory"
-                  @update:expanded="handleExpandedKeys"
-                  v-model:ticked="tickedRentals"
-                  tick-strategy="strict"
-                >
-                  <template v-slot:default-header="scope">
-                    <q-item>
-                      <q-item-section
-                        >{{ scope.node.name }} - {{ scope.node.organisation }}</q-item-section
-                      >
-                      <q-item-section>
-                        <q-input
-                          v-if="!scope.node.children"
-                          v-model="scope.node.quantity"
-                          type="number"
-                          min="0"
-                        />
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-tree>
+                <div class="tree-container">
+                  <q-tree
+                    :nodes="filteredInventory"
+                    node-key="id"
+                    :key="filteredInventory.length"
+                    :filter-method="filterMethod"
+                    ref="inventoryTree"
+                    v-model:expanded="expandedKeysInventory"
+                    @update:expanded="handleExpandedKeys"
+                    v-model:ticked="tickedRentals"
+                    tick-strategy="strict"
+                    full-width
+                  >
+                    <template v-slot:default-header="scope">
+                      <q-item>
+                        <q-item-section
+                          >{{ scope.node.name }} - {{ scope.node.organisation }}</q-item-section
+                        >
+                        <q-item-section>
+                          <q-input
+                            v-if="!scope.node.children"
+                            v-model="scope.node.quantity"
+                            type="number"
+                            min="0"
+                          />
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-tree>
+                </div>
               </q-card-section>
               <q-card-actions align="right">
                 <q-btn flat label="Cancel" color="primary" v-close-popup />
@@ -314,7 +317,6 @@ const addRental = async () => {
       userid: node.userid,
     }
   })
-  // packlist.value.items.push(...selectedRentals)
   for (const rental of selectedRentals) {
     const payload = {
       packList_id: route.params.packlistid,
@@ -332,9 +334,19 @@ const addRental = async () => {
         },
       })
     } else {
-      payload.dailyRate = 0
+      const rentalLogin = loginStore.logins.find(
+        (login) => String(login.id) === String(rental.userid),
+      )
+      console.info(rentalLogin)
+      const response = await axios.get(`/api/rentals/${rental.id}`, {
+        headers: {
+          Authorization: `Bearer ${rentalLogin.access_token}`,
+        },
+      })
+      console.info('Fetched inventoryItem:', response.data)
+      payload.dailyRate = response.data.rental.dailyRate
       payload.name = rental.name
-      payload.weight = 0
+      payload.weight = response.data.rental.weight
       payload.supplier = rental.supplier
       payload.rentedUnits = 0
       await axios.post('/api/pack-list-subrentals', payload, {
@@ -345,6 +357,7 @@ const addRental = async () => {
     }
   }
   console.info(selectedRentals)
+  fetchPacklist()
   $q.notify({
     message: `${selectedRentals.length} rentals was added.`,
     color: 'green',
@@ -451,6 +464,11 @@ onMounted(() => {
     bottom: 20px;
     right: 20px;
   }
+}
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 </style>
 
