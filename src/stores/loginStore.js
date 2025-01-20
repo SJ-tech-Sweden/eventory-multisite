@@ -20,9 +20,12 @@ export const useLoginStore = defineStore('loginStore', {
         firstName: null,
         lastName: null,
       }
-      await this.authenticateLogin(newLogin)
-      this.logins.push(newLogin)
-      this.saveToLocalStorage()
+      const result = await this.authenticateLogin(newLogin)
+      if (result.success) {
+        this.logins.push(newLogin)
+        this.saveToLocalStorage()
+      }
+      return result
     },
 
     async authenticateLogin(login) {
@@ -43,6 +46,7 @@ export const useLoginStore = defineStore('loginStore', {
         login.organisation = respnonseUser.data.organizationName
         login.firstName = respnonseUser.data.firstName
         login.lastName = respnonseUser.data.lastName
+
         // Fetch the logo image
         const responseLogo = await axios.get('/api/logo', {
           headers: {
@@ -63,8 +67,10 @@ export const useLoginStore = defineStore('loginStore', {
           this.saveToLocalStorage()
         }
         this.saveToLocalStorage()
+        return { success: true, message: 'Authentication successful' }
       } catch (error) {
         console.error('Authentication failed for:', login.username, error)
+        return { success: false, message: 'Authentication failed' }
       }
     },
 

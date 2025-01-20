@@ -1,6 +1,9 @@
 <template>
   <q-page padding>
     <q-card>
+      <q-banner v-if="message" :class="bannerClass" dense>
+        {{ message }}
+      </q-banner>
       <q-card-section>
         <div class="text-h6">Add New Login</div>
         <q-input v-model="username" label="Username" outlined class="q-mb-sm" />
@@ -51,10 +54,14 @@ const loginStore = useLoginStore()
 const username = ref('')
 const password = ref('')
 const color = ref('')
+const bannerClass = ref('')
+const message = ref('')
 
-const addLogin = () => {
+const addLogin = async () => {
   if (username.value && password.value) {
-    loginStore.addLogin(username.value, password.value, color.value)
+    const result = await loginStore.addLogin(username.value, password.value, color.value)
+    message.value = result.message
+    bannerClass.value = result.success ? 'bg-green-4 text-white' : 'bg-red-4 text-white'
     username.value = ''
     password.value = ''
     color.value = ''
@@ -76,5 +83,13 @@ const logins = loginStore.logins
 .q-card {
   max-width: 400px;
   margin: 0 auto 20px auto;
+}
+
+.bg-green-4 {
+  background-color: #4caf50 !important;
+}
+
+.bg-red-4 {
+  background-color: #f44336 !important;
 }
 </style>
