@@ -154,35 +154,12 @@ const fetchInventoryItem = async () => {
     })
     console.info('Fetched inventoryItem:', response.data)
     inventoryItem.value = response.data
-    calculateCalendarEvents()
   } catch (error) {
     error.value = error.message
     console.error('Failed to fetch inventoryItem:', error)
   } finally {
     loading.value = false
   }
-}
-
-const calculateCalendarEvents = () => {
-  if (!inventoryItem.value) return
-
-  const events = []
-
-  const addEventPacklist = (packList) => {
-    events.push({
-      id: packList.packListId,
-      name: `${packList.packListName} (${packList.quantity})`,
-      start: packList.startDate,
-      end: packList.endDate,
-      color: 'blue',
-    })
-  }
-
-  inventoryItem.value.activePackLists.forEach(addEventPacklist)
-  inventoryItem.value.archivedPackLists.forEach(addEventPacklist)
-
-  console.info(`Events: ${JSON.stringify(events)}`)
-  calendarEvents.value = events
 }
 
 const formattedMonth = computed(() => {
