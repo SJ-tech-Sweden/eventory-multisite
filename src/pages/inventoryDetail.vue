@@ -15,17 +15,21 @@
 
     <q-card v-else>
       <q-card-section v-if="inventoryItem && inventoryItem.rental" class="relative-position">
-        <div class="text-h6">{{ inventoryItem.rental.name }}</div>
+        <div class="text-h5">{{ inventoryItem.rental.name }}</div>
         <q-img :src="inventoryItem.rental.imageUrl" alt="Item Image" width="300px" />
-        <div>Description: {{ inventoryItem.rental.description }}</div>
-        <div>Weight: {{ inventoryItem.rental.weight }} kg</div>
-        <div>Stock Level: {{ inventoryItem.rental.stockLevel }}</div>
-        <div>Daily Rate: {{ inventoryItem.rental.dailyRate }}</div>
-        <div>Value: {{ inventoryItem.rental.value }}</div>
-        <div>Article Number: {{ inventoryItem.rental.articleNumber }}</div>
-        <div>Tenant: {{ inventoryItem.rental.tenant }}</div>
-        <div>Updated At: {{ new Date(inventoryItem.rental.updated_at).toLocaleString() }}</div>
-        <div>Created At: {{ new Date(inventoryItem.rental.created_at).toLocaleString() }}</div>
+        <div class="text-subtitle">Description: {{ inventoryItem.rental.description }}</div>
+        <div class="text-subtitle">Weight: {{ inventoryItem.rental.weight }} kg</div>
+        <div class="text-subtitle">Stock Level: {{ inventoryItem.rental.stockLevel }}</div>
+        <div class="text-subtitle">Daily Rate: {{ inventoryItem.rental.dailyRate }}</div>
+        <div class="text-subtitle">Value: {{ inventoryItem.rental.value }}</div>
+        <div class="text-subtitle">Article Number: {{ inventoryItem.rental.articleNumber }}</div>
+        <div class="text-subtitle">Tenant: {{ inventoryItem.rental.tenant }}</div>
+        <div class="text-subtitle">
+          Updated At: {{ new Date(inventoryItem.rental.updated_at).toLocaleString() }}
+        </div>
+        <div class="text-subtitle">
+          Created At: {{ new Date(inventoryItem.rental.created_at).toLocaleString() }}
+        </div>
         <q-avatar class="responsive-avatar" size="100px">
           <q-img :src="login.organisationLogo"></q-img>
         </q-avatar>
@@ -72,19 +76,21 @@
       v-if="inventoryItem && inventoryItem.activePackLists && inventoryItem.activePackLists.length"
     >
       <q-card-section>
-        <div class="text-h6">Active Pack Lists</div>
+        <div class="text-h5">Active Pack Lists</div>
         <q-card
           v-for="packList in inventoryItem.activePackLists"
           :key="packList.packListId"
           class="nested-card"
         >
           <q-card-section>
-            <div>Pack List Name: {{ packList.packListName }}</div>
-            <div>Job Name: {{ packList.jobName }}</div>
-            <div>Quantity: {{ packList.quantity }}</div>
-            <div>Start Date: {{ packList.startDate }}</div>
-            <div>End Date: {{ packList.endDate }}</div>
-            <div>Status: {{ packList.jobStatus }}</div>
+            <div class="text-h6">Pack List Name: {{ packList.packListName }}</div>
+            <div class="text-subtitle">Job Name: {{ packList.jobName }}</div>
+            <div class="text-subtitle">Quantity: {{ packList.quantity }}</div>
+            <div class="text-subtitle">Start Date: {{ packList.startDate }}</div>
+            <div class="text-subtitle">End Date: {{ packList.endDate }}</div>
+            <div class="text-subtitle">
+              Status: {{ packList.jobStatus }} <q-icon :name="getIcon(packList.jobStatus)" />
+            </div>
           </q-card-section>
           <q-card-actions>
             <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId)" />
@@ -106,12 +112,14 @@
           class="nested-card"
         >
           <q-card-section>
-            <div>Pack List Name: {{ packList.packListName }}</div>
-            <div>Job Name: {{ packList.jobName }}</div>
-            <div>Quantity: {{ packList.quantity }}</div>
-            <div>Start Date: {{ packList.startDate }}</div>
-            <div>End Date: {{ packList.endDate }}</div>
-            <div>Status: {{ packList.jobStatus }}</div>
+            <div class="text-h6">Pack List Name: {{ packList.packListName }}</div>
+            <div class="text-subtitle">Job Name: {{ packList.jobName }}</div>
+            <div class="text-subtitle">Quantity: {{ packList.quantity }}</div>
+            <div class="text-subtitle">Start Date: {{ packList.startDate }}</div>
+            <div class="text-subtitle">End Date: {{ packList.endDate }}</div>
+            <div class="text-subtitle">
+              Status: {{ packList.jobStatus }} <q-icon :name="getIcon(packList.jobStatus)" />
+            </div>
           </q-card-section>
           <q-card-actions>
             <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId)" />
@@ -272,6 +280,26 @@ const getEventsForDate = (date) => {
   console.info(eventForDay)
 
   return eventForDay
+}
+
+// Function to get the icon based on the status
+function getIcon(status) {
+  switch (status) {
+    case 'confirmed':
+      return 'done'
+    case 'returned':
+      return 'arrow_back'
+    case 'quotation':
+      return 'question_mark'
+    case 'canceled':
+      return 'close' // Use 'close' instead of 'X' for better compatibility
+    case 'checked_out':
+      return 'arrow_forward'
+    case 'completed':
+      return 'done_all' // Use 'check_circle' for double checkmarks
+    default:
+      return 'help' // Default to a help icon if the status is unknown
+  }
 }
 
 // Function to navigate to the pack list

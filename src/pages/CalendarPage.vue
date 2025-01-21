@@ -179,9 +179,12 @@ onMounted(() => {
   fetchEvents()
 })
 
+// Function to navigate to the pack list page
 function navigateToPackList(packListId, userid) {
   router.push(`/packlist/${packListId}/${userid}`)
 }
+
+// Function to get the icon based on the status
 function getIcon(status) {
   switch (status) {
     case 'confirmed':
