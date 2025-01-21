@@ -5,6 +5,7 @@
         <div class="text-h6">Packlist Details</div>
 
         <div v-if="packlist">
+          <!-- Display packlist details -->
           <q-avatar class="responsive-avatar" size="100px">
             <q-img :src="login.organisationLogo"></q-img>
           </q-avatar>
@@ -16,12 +17,12 @@
           <div class="text-caption">Weight: {{ packlist.weight }} kg</div>
           <div class="text-caption">Note: {{ packlist.note }}</div>
 
-          <div class="text-h6">Rentals</div>
           <div class="q-pa-md q-gutter-sm">
             <q-btn color="primary" label="Toggle everything" @click="toggleEverything" />
             <q-btn label="Add Item" color="primary" @click="showAddItemDialog = true" />
           </div>
 
+          <!-- Dialog for adding items to the packlist -->
           <q-dialog v-model="showAddItemDialog" full-width>
             <q-card>
               <q-card-section>
@@ -38,6 +39,7 @@
                 </q-input>
                 <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
                 <div class="tree-container">
+                  <!-- Tree view for inventory items -->
                   <q-tree
                     :nodes="filteredInventory"
                     node-key="id"
@@ -74,6 +76,9 @@
               </q-card-actions>
             </q-card>
           </q-dialog>
+          <!-- Rentals section -->
+          <div class="text-h6">Rentals</div>
+          <!-- Table for displaying packlist items -->
           <TreeTable
             :value="packlist.rentalsTree"
             tableStyle="min-width: 50rem"
@@ -154,6 +159,7 @@
 </template>
 
 <script setup>
+// Import necessary modules and components
 import { ref, onMounted, computed } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useRoute } from 'vue-router'
@@ -162,10 +168,9 @@ import axios from 'axios'
 import TreeTable from 'primevue/treetable'
 import Column from 'primevue/column'
 
+// Define reactive variables and references
 const $q = useQuasar()
-
 const loginStore = useLoginStore()
-
 const route = useRoute()
 const packlist = ref(null)
 const expandedKeys = ref({})
@@ -192,6 +197,7 @@ const transformData = (nodes) => {
   })
 }
 
+// Fetch packlist and inventory data on component mount
 const fetchPacklist = async () => {
   const packlistId = route.params.packlistid
   const userId = route.params.userid
@@ -277,6 +283,7 @@ const addPropertiesToTree = (nodes, properties) => {
   })
 }
 
+// Get inventory data for all logins
 const fetchInventory = async () => {
   inventory.value = []
   for (const login of loginStore.logins) {
@@ -302,6 +309,7 @@ const fetchInventory = async () => {
   }
 }
 
+// Add selected rentals to packlist
 const addRental = async () => {
   const selectedRentals = tickedRentals.value.map((id) => {
     const node = findNodeById(filteredInventory.value, id)
@@ -364,6 +372,7 @@ const addRental = async () => {
   })
 }
 
+// Find node by ID in the inventory tree
 const findNodeById = (nodes, id) => {
   for (const node of nodes) {
     if (node.id === id) {
@@ -388,6 +397,7 @@ const filterMethod = (node, filter) => {
   return node.name && node.name.toLowerCase().includes(filter.toLowerCase())
 }
 
+// Computed property to filter inventory based on the search filter
 const filterNodes = (nodes, filter) => {
   return nodes
     .map((node) => {
@@ -424,6 +434,7 @@ const expandAllLabel = computed(() => {
   return 'Expand All'
 })
 
+// Handle expanded keys in the inventory tree
 const handleExpandedKeys = () => {
   console.info('Expanded keys:', expandedKeys.value)
   isExpanded.value = Object.keys(expandedKeys.value).length > 0
@@ -437,6 +448,7 @@ const filteredInventory = computed(() => {
   return filterNodes(inventory.value, filter.value)
 })
 
+// Fetch data when the component is mounted
 onMounted(() => {
   fetchPacklist()
   fetchInventory()

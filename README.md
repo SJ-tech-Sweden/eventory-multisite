@@ -4,7 +4,9 @@
 
 A project to view multiple eventory oganisations at once
 
-Under Login manager you can add your logins from the different organisations. Calendar is a calendar view that combines the job from all your logins so that you can view them from one place, nothing is editable at this time.
+Under Login manager you can add your logins from the different organisations. Calendar is a calendar view that combines the job from all your logins so that you can view them from one place. Inventory is where you can see all inventory items and how many there are in stock at any time.
+
+From the calendar you can now add rentals to a existing packlist, if it comes from the sam organisation as the packlist it will just be added as a rental but if it comes from another organisation it will be added as a external subrental.
 
 One deployed version exists at [eventory.sj-tech.se](https://eventory.sj-tech.se)
 
