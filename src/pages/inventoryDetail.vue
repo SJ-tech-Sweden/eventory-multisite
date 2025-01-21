@@ -38,7 +38,7 @@
 
     <q-card v-if="!loading">
       <q-card-section>
-        <div class="text-h6">Calendar View</div>
+        <div class="text-h6">Stocklevel</div>
         <div class="q-gutter-sm">
           <q-btn label="Today" @click="goToToday" />
           <q-btn label="Previous Month" @click="goToPreviousMonth" />
