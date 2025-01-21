@@ -12,6 +12,7 @@
           first-day-of-week="1"
           :event-color="getEventColor"
           today-btn
+          :landscape="$q.screen.gt.xs"
         />
         <div class="button-wrapper">
           <q-btn color="primary" label="Show All Events" @click="showAllEvents" />
