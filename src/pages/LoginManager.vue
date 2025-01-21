@@ -12,13 +12,13 @@
           filled
           v-model="color"
           :rules="['anyColor']"
-          hint="With validation"
+          hint="Click the color icon to select a color"
           class="my-input"
         >
           <template v-slot:append>
             <q-icon name="colorize" class="cursor-pointer">
               <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                <q-color v-model="color" />
+                <q-color v-model="color" default-view="palette" />
               </q-popup-proxy>
             </q-icon>
           </template>
@@ -36,7 +36,7 @@
           <q-item v-for="login in logins" :key="login.id" clickable>
             <q-item-section>{{ login.username }}</q-item-section>
             <q-item-section side>
-              <q-btn flat icon="login" @click.stop="setActiveLogin(login.id)" />
+              <q-btn flat icon="refresh" @click.stop="setActiveLogin(login.id)" />
               <q-btn flat icon="delete" color="negative" @click.stop="removeLogin(login.id)" />
             </q-item-section>
           </q-item>
@@ -108,10 +108,10 @@ const logins = loginStore.logins
 }
 
 .bg-green-4 {
-  background-color: #4caf50 !important;
+  background-color: positive !important;
 }
 
 .bg-red-4 {
-  background-color: #f44336 !important;
+  background-color: negative !important;
 }
 </style>

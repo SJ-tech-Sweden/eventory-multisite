@@ -5,13 +5,13 @@
         <div class="text-h6">Event Calendar</div>
         <q-date
           v-model="selectedDate"
-          minimal
           range
           @update:model-value="filterEventsByDateRange"
           mask="YYYY-MM-DD"
           :events="dateEvents"
-          :event-color="getEventColor"
           first-day-of-week="1"
+          :event-color="getEventColor"
+          today-btn
         />
         <div class="button-wrapper">
           <q-btn color="primary" label="Show All Events" @click="showAllEvents" />
@@ -83,18 +83,22 @@
 </template>
 
 <script setup>
+// Import necessary modules and components
 import { ref, onMounted, computed } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-const router = useRouter()
+import { closestQuasarColor } from 'src/utils/colorUtils'
 
+// Define reactive variables and references
+const router = useRouter()
 const loginStore = useLoginStore()
 const selectedDate = ref(new Date().toISOString().substr(0, 10))
 const events = ref([])
 const filteredEvents = ref([])
 const showingAllEvents = ref(false) // New state variable
 
+// Function to fetch events from the API
 const fetchEvents = async () => {
   events.value = []
   for (const login of loginStore.logins) {
@@ -141,8 +145,8 @@ const getEventColor = (date) => {
   const formattedDate = date.replace(/\//g, '-') // Format input date if needed
   console.info(`formattedDate: ${formattedDate}`)
   const matchingEvent = events.value.find((event) => event.startDate === formattedDate)
-  console.info(`Matching events: ${matchingEvent.color}`)
-  return matchingEvent.color || 'primary'
+  console.info(`Matching events: ${closestQuasarColor(matchingEvent.color) || 'primary'}`)
+  return closestQuasarColor(matchingEvent.color) || 'primary'
 }
 
 const filterEventsByDateRange = (range) => {
