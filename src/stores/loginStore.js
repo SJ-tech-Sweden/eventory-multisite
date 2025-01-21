@@ -1,7 +1,9 @@
 // src/stores/loginStore.js
+// Import the required functions
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
+// Define the store
 export const useLoginStore = defineStore('loginStore', {
   state: () => ({
     logins: JSON.parse(localStorage.getItem('logins')) || [],
@@ -28,6 +30,7 @@ export const useLoginStore = defineStore('loginStore', {
       return result
     },
 
+    // This function authenticates a login and fetches the user information
     async authenticateLogin(login) {
       console.info('Authenticating login:', login.username)
       try {
@@ -96,15 +99,37 @@ export const useLoginStore = defineStore('loginStore', {
           this.logins.forEach((login) => {
             this.authenticateLogin(login)
           })
+          this.updateLastRefreshTime()
         },
         intervalMinutes * 60 * 1000,
       )
+      this.updateLastRefreshTime()
     },
 
     stopTokenRefresh() {
       if (this.refreshIntervalId) {
         clearInterval(this.refreshIntervalId)
         this.refreshIntervalId = null
+      }
+    },
+
+    updateLastRefreshTime() {
+      const now = new Date().toISOString()
+      this.lastRefreshTime = now
+      localStorage.setItem('lastRefreshTime', now)
+    },
+
+    checkAndRefreshTokens() {
+      const now = new Date().getTime()
+      const lastRefresh = new Date(this.lastRefreshTime).getTime()
+      const intervalMinutes = 15
+      const intervalMillis = intervalMinutes * 60 * 1000
+
+      if (now - lastRefresh > intervalMillis) {
+        this.logins.forEach((login) => {
+          this.authenticateLogin(login)
+        })
+        this.updateLastRefreshTime()
       }
     },
 

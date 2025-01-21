@@ -131,6 +131,10 @@ const calendarDate = ref(new Date().toISOString().substr(0, 10))
 const calendarEvents = ref([])
 const calendar = ref(null)
 
+// Refresh login tokens
+loginStore.checkAndRefreshTokens()
+loginStore.startTokenRefresh()
+
 // Fetch the inventory item
 const fetchInventoryItem = async () => {
   const inventoryId = route.params.inventoryid

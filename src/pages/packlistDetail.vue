@@ -186,6 +186,11 @@ const isExpanded = ref(false)
 const expandedKeysInventory = ref([])
 const tickedRentals = ref([])
 
+// Refresh login tokens
+loginStore.checkAndRefreshTokens()
+loginStore.startTokenRefresh()
+
+// Transform the tree data
 const transformData = (nodes) => {
   return nodes.map((node) => {
     const { id, children, ...data } = node

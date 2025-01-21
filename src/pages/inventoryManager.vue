@@ -41,6 +41,10 @@ const inventoryTree = ref(null)
 const isExpanded = ref(false)
 const expandedKeys = ref([])
 
+// Refresh login tokens
+loginStore.checkAndRefreshTokens()
+loginStore.startTokenRefresh()
+
 // Add the properties to the inventory tree
 const addPropertiesToTree = (nodes, properties) => {
   return nodes.map((node) => {

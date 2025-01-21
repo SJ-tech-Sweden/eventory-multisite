@@ -59,6 +59,10 @@ const color = ref('')
 const bannerClass = ref('')
 const message = ref('')
 
+// Refresh login tokens
+loginStore.checkAndRefreshTokens()
+loginStore.startTokenRefresh()
+
 // Function to generate a random color
 const generateRandomColor = () => {
   const letters = '0123456789ABCDEF'
