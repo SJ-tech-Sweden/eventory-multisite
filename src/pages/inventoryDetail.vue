@@ -73,18 +73,23 @@
     >
       <q-card-section>
         <div class="text-h6">Active Pack Lists</div>
-        <q-list bordered>
-          <q-item v-for="packList in inventoryItem.activePackLists" :key="packList.packListId">
-            <q-item-section>
-              <div>Pack List Name: {{ packList.packListName }}</div>
-              <div>Job Name: {{ packList.jobName }}</div>
-              <div>Quantity: {{ packList.quantity }}</div>
-              <div>Start Date: {{ packList.startDate }}</div>
-              <div>End Date: {{ packList.endDate }}</div>
-              <div>Status: {{ packList.jobStatus }}</div>
-            </q-item-section>
-          </q-item>
-        </q-list>
+        <q-card
+          v-for="packList in inventoryItem.activePackLists"
+          :key="packList.packListId"
+          class="nested-card"
+        >
+          <q-card-section>
+            <div>Pack List Name: {{ packList.packListName }}</div>
+            <div>Job Name: {{ packList.jobName }}</div>
+            <div>Quantity: {{ packList.quantity }}</div>
+            <div>Start Date: {{ packList.startDate }}</div>
+            <div>End Date: {{ packList.endDate }}</div>
+            <div>Status: {{ packList.jobStatus }}</div>
+          </q-card-section>
+          <q-card-actions>
+            <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId)" />
+          </q-card-actions>
+        </q-card>
       </q-card-section>
     </q-card>
 
@@ -95,18 +100,23 @@
     >
       <q-card-section>
         <div class="text-h6">Archived Pack Lists</div>
-        <q-list bordered>
-          <q-item v-for="packList in inventoryItem.archivedPackLists" :key="packList.packListId">
-            <q-item-section>
-              <div>Pack List Name: {{ packList.packListName }}</div>
-              <div>Job Name: {{ packList.jobName }}</div>
-              <div>Quantity: {{ packList.quantity }}</div>
-              <div>Start Date: {{ packList.startDate }}</div>
-              <div>End Date: {{ packList.endDate }}</div>
-              <div>Status: {{ packList.jobStatus }}</div>
-            </q-item-section>
-          </q-item>
-        </q-list>
+        <q-card
+          v-for="packList in inventoryItem.archivedPackLists"
+          :key="packList.packListId"
+          class="nested-card"
+        >
+          <q-card-section>
+            <div>Pack List Name: {{ packList.packListName }}</div>
+            <div>Job Name: {{ packList.jobName }}</div>
+            <div>Quantity: {{ packList.quantity }}</div>
+            <div>Start Date: {{ packList.startDate }}</div>
+            <div>End Date: {{ packList.endDate }}</div>
+            <div>Status: {{ packList.jobStatus }}</div>
+          </q-card-section>
+          <q-card-actions>
+            <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId)" />
+          </q-card-actions>
+        </q-card>
       </q-card-section>
     </q-card>
   </q-page>
@@ -116,13 +126,14 @@
 // Import necessary modules and components
 import { ref, onMounted, computed } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { QCalendarMonth } from '@quasar/quasar-ui-qcalendar'
 
 // Define reactive variables and references
 const loginStore = useLoginStore()
 const route = useRoute()
+const router = useRouter()
 const inventoryItem = ref(null)
 const loading = ref(true)
 const error = ref(null)
@@ -263,6 +274,12 @@ const getEventsForDate = (date) => {
   return eventForDay
 }
 
+// Function to navigate to the pack list
+const navigateToPackList = (packListId) => {
+  const userId = route.params.userid
+  router.push(`/packlist/${packListId}/${userId}`)
+}
+
 // Fetcching the inventory item on mounted
 onMounted(() => {
   fetchInventoryItem()
@@ -278,6 +295,10 @@ onMounted(() => {
   position: absolute;
   top: 20px;
   right: 20px;
+}
+
+.nested-card {
+  margin: 16px; /* Adjust the margin as needed */
 }
 
 @media (max-width: 600px) {
