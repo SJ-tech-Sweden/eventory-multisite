@@ -25,11 +25,13 @@
 </template>
 
 <script setup>
+// Import necessary modules and components
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useLoginStore } from 'src/stores/loginStore'
 
+// Define reactive variables and references
 const inventory = ref([])
 const loginStore = useLoginStore()
 const router = useRouter()
@@ -39,6 +41,7 @@ const inventoryTree = ref(null)
 const isExpanded = ref(false)
 const expandedKeys = ref([])
 
+// Add the properties to the inventory tree
 const addPropertiesToTree = (nodes, properties) => {
   return nodes.map((node) => {
     const updatedNode = {
@@ -52,6 +55,7 @@ const addPropertiesToTree = (nodes, properties) => {
   })
 }
 
+// Fetch the inventory for each login
 const fetchInventory = async () => {
   inventory.value = []
   for (const login of loginStore.logins) {
@@ -77,6 +81,7 @@ const fetchInventory = async () => {
   }
 }
 
+// Function to navigate to the inventory detail page
 const navigateToInventoryDetail = (node) => {
   console.info('Navigating to inventory detail:', node)
   if (!node.children || node.children.length === 0) {
@@ -84,15 +89,18 @@ const navigateToInventoryDetail = (node) => {
   }
 }
 
+// Function to reset the filter
 const resetFilter = () => {
   filter.value = ''
   filterRef.value.focus()
 }
 
+// Function to control the filterMethod for the tree
 const filterMethod = (node, filter) => {
   return node.name && node.name.toLowerCase().includes(filter.toLowerCase())
 }
 
+// Function to filter the nodes
 const filterNodes = (nodes, filter) => {
   return nodes
     .map((node) => {
@@ -110,6 +118,7 @@ const filterNodes = (nodes, filter) => {
     .filter((node) => node !== null)
 }
 
+// Function to toggle expand all
 const toggleExpandAll = () => {
   if (!isExpanded.value) {
     if (inventoryTree.value) {
@@ -122,6 +131,7 @@ const toggleExpandAll = () => {
   }
 }
 
+// Computed property for the expand all label
 const expandAllLabel = computed(() => {
   if (isExpanded.value) {
     return 'Collapse All'
@@ -129,12 +139,14 @@ const expandAllLabel = computed(() => {
   return 'Expand All'
 })
 
+// Function to handle expanded keys
 const handleExpandedKeys = () => {
   console.info('Expanded keys:', expandedKeys.value)
   isExpanded.value = Object.keys(expandedKeys.value).length > 0
   console.info('isExpanded:', isExpanded.value)
 }
 
+// Computed property for the filtered inventory
 const filteredInventory = computed(() => {
   if (!filter.value) {
     return inventory.value
@@ -142,6 +154,7 @@ const filteredInventory = computed(() => {
   return filterNodes(inventory.value, filter.value)
 })
 
+// Fetch the inventory on mounted
 onMounted(() => {
   fetchInventory()
 })

@@ -47,9 +47,11 @@
 </template>
 
 <script setup>
+// Import necessary modules and components
 import { ref } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 
+// Define reactive variables and references
 const loginStore = useLoginStore()
 const username = ref('')
 const password = ref('')
@@ -57,6 +59,20 @@ const color = ref('')
 const bannerClass = ref('')
 const message = ref('')
 
+// Function to generate a random color
+const generateRandomColor = () => {
+  const letters = '0123456789ABCDEF'
+  let color = '#'
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)]
+  }
+  return color
+}
+
+// Set the default color to a random color
+color.value = generateRandomColor()
+
+// Function to add a new login
 const addLogin = async () => {
   if (username.value && password.value) {
     const result = await loginStore.addLogin(username.value, password.value, color.value)
@@ -64,14 +80,16 @@ const addLogin = async () => {
     bannerClass.value = result.success ? 'bg-green-4 text-white' : 'bg-red-4 text-white'
     username.value = ''
     password.value = ''
-    color.value = ''
+    color.value = generateRandomColor() // Reset to a new random color
   }
 }
 
+// Function to remove a login
 const removeLogin = (id) => {
   loginStore.removeLogin(id)
 }
 
+// Function to set the active login or right now only refreshes the token and ogranisation info
 const setActiveLogin = (id) => {
   loginStore.setActiveLogin(id)
 }

@@ -113,12 +113,14 @@
 </template>
 
 <script setup>
+// Import necessary modules and components
 import { ref, onMounted, computed } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { QCalendarMonth } from '@quasar/quasar-ui-qcalendar'
 
+// Define reactive variables and references
 const loginStore = useLoginStore()
 const route = useRoute()
 const inventoryItem = ref(null)
@@ -129,6 +131,7 @@ const calendarDate = ref(new Date().toISOString().substr(0, 10))
 const calendarEvents = ref([])
 const calendar = ref(null)
 
+// Fetch the inventory item
 const fetchInventoryItem = async () => {
   const inventoryId = route.params.inventoryid
   const userId = route.params.userid
@@ -162,12 +165,14 @@ const fetchInventoryItem = async () => {
   }
 }
 
+// Computed property to format the month
 const formattedMonth = computed(() => {
   const date = new Date(calendarDate.value)
   const formatter = monthFormatter()
   return formatter ? formatter.format(date) + ' ' + date.getFullYear() : ''
 })
 
+// Function to format the month
 function monthFormatter() {
   try {
     return new Intl.DateTimeFormat('en-US', {
@@ -179,45 +184,51 @@ function monthFormatter() {
   }
 }
 
+// Function to move the calendar to today
 function goToToday() {
   if (calendar.value) {
     calendar.value.moveToToday()
   }
 }
 
+// Function to move the calendar to the previous month
 function goToPreviousMonth() {
   if (calendar.value) {
     calendar.value.prev()
   }
 }
 
+// Function to move the calendar to the next month
 function goToNextMonth() {
   if (calendar.value) {
     calendar.value.next()
   }
 }
 
+// Function to get the events for a specific date
 const getEventsForDate = (date) => {
   const dateStr = date
   let quantity = inventoryItem.value.rental.stockLevel
-
+  // Check if the date is within a active pack list
   inventoryItem.value.activePackLists.forEach((packList) => {
     if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
       quantity -= packList.quantity
     }
   })
+  // Check if the date is within a archived pack list
   inventoryItem.value.archivedPackLists.forEach((packList) => {
     if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
       quantity -= packList.quantity
     }
   })
   const eventForDay = []
+  // Calculate the stockLevel
   const stockLevel = {
     title: `Available: ${quantity}`,
     date: date,
     color: quantity > 0 ? 'green' : quantity === 0 ? 'orange' : 'red',
   }
-
+  // Check if the date is within a active pack list
   inventoryItem.value.activePackLists.forEach((packList) => {
     if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
       eventForDay.push({
@@ -229,7 +240,7 @@ const getEventsForDate = (date) => {
       })
     }
   })
-
+  // Check if the date is within a archived pack list
   inventoryItem.value.archivedPackLists.forEach((packList) => {
     if (dateStr >= packList.startDate && dateStr <= packList.endDate) {
       eventForDay.push({
@@ -248,6 +259,7 @@ const getEventsForDate = (date) => {
   return eventForDay
 }
 
+// Fetcching the inventory item on mounted
 onMounted(() => {
   fetchInventoryItem()
 })
