@@ -19,8 +19,8 @@
         <q-img :src="inventoryItem.rental.imageUrl" alt="Item Image" width="300px" />
         <div class="text-subtitle">Description: {{ inventoryItem.rental.description }}</div>
         <div class="text-subtitle">Weight: {{ inventoryItem.rental.weight }} kg</div>
-        <div class="text-subtitle">Stock Level: {{ inventoryItem.rental.stockLevel }}</div>
-        <div class="text-subtitle">Daily Rate: {{ inventoryItem.rental.dailyRate }}</div>
+        <div class="text-subtitle">Stock level: {{ inventoryItem.rental.stockLevel }}</div>
+        <div class="text-subtitle">Daily rate: {{ inventoryItem.rental.dailyRate }}</div>
         <div class="text-subtitle">Value: {{ inventoryItem.rental.value }}</div>
         <div class="text-subtitle">Article Number: {{ inventoryItem.rental.articleNumber }}</div>
         <div class="text-subtitle">Tenant: {{ inventoryItem.rental.tenant }}</div>
@@ -38,7 +38,7 @@
 
     <q-card v-if="!loading">
       <q-card-section>
-        <div class="text-h6">Stocklevel</div>
+        <div class="text-h6">Stock level</div>
         <div class="q-gutter-sm">
           <q-btn label="Today" @click="goToToday" />
           <q-btn label="Previous Month" @click="goToPreviousMonth" />
