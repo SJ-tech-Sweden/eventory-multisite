@@ -90,11 +90,26 @@ import { useLoginStore } from 'src/stores/loginStore'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { closestQuasarColor } from 'src/utils/colorUtils'
+import { getIcon } from 'src/utils/getIcon'
 
 // Define reactive variables and references
 const router = useRouter()
 const loginStore = useLoginStore()
-const selectedDate = ref(new Date().toISOString().substr(0, 10))
+const today = new Date()
+const twoWeeksFromToday = new Date(today)
+twoWeeksFromToday.setDate(today.getDate() + 14)
+
+const formatDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const selectedDate = ref({
+  from: formatDate(today),
+  to: formatDate(twoWeeksFromToday),
+})
 const events = ref([])
 const filteredEvents = ref([])
 const showingAllEvents = ref(false) // New state variable
@@ -129,6 +144,7 @@ const fetchEvents = async () => {
         events.value.push(...fetchedEvents)
         console.info(`Total events: ${JSON.stringify(events.value)}`)
         console.log(`dateEvents: ${JSON.stringify(dateEvents.value)}`)
+        filterEventsByDateRange(selectedDate.value) // Filter events after fetching
       } catch (error) {
         console.error(`Failed to fetch events for ${login.username}:`, error)
       }
@@ -184,25 +200,25 @@ function navigateToPackList(packListId, userid) {
   router.push(`/packlist/${packListId}/${userid}`)
 }
 
-// Function to get the icon based on the status
-function getIcon(status) {
-  switch (status) {
-    case 'confirmed':
-      return 'done'
-    case 'returned':
-      return 'arrow_back'
-    case 'quotation':
-      return 'question_mark'
-    case 'canceled':
-      return 'close' // Use 'close' instead of 'X' for better compatibility
-    case 'checked_out':
-      return 'arrow_forward'
-    case 'completed':
-      return 'done_all' // Use 'check_circle' for double checkmarks
-    default:
-      return 'help' // Default to a help icon if the status is unknown
-  }
-}
+// // Function to get the icon based on the status
+// function getIcon(status) {
+//   switch (status) {
+//     case 'confirmed':
+//       return 'done'
+//     case 'returned':
+//       return 'arrow_back'
+//     case 'quotation':
+//       return 'question_mark'
+//     case 'canceled':
+//       return 'close' // Use 'close' instead of 'X' for better compatibility
+//     case 'checked_out':
+//       return 'arrow_forward'
+//     case 'completed':
+//       return 'done_all' // Use 'check_circle' for double checkmarks
+//     default:
+//       return 'help' // Default to a help icon if the status is unknown
+//   }
+// }
 </script>
 
 <style scoped>

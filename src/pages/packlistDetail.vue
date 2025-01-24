@@ -274,7 +274,7 @@ const toggleEverything = () => {
 
   expandedKeys.value = _expandedKeys
 }
-// Add rentals to packlist
+// Add properties to the inventory tree
 const addPropertiesToTree = (nodes, properties) => {
   return nodes.map((node) => {
     const updatedNode = {

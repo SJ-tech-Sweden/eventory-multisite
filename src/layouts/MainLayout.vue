@@ -43,6 +43,20 @@
           <q-item-section>Inventory</q-item-section>
         </q-item>
 
+        <q-item clickable to="/checkin">
+          <q-item-section avatar>
+            <q-icon name="login" />
+          </q-item-section>
+          <q-item-section>Warehouse check in</q-item-section>
+        </q-item>
+
+        <q-item clickable to="/checkout">
+          <q-item-section avatar>
+            <q-icon name="logout" />
+          </q-item-section>
+          <q-item-section>Warehouse check out</q-item-section>
+        </q-item>
+
         <q-item clickable to="/login-manager">
           <q-item-section avatar>
             <q-icon name="manage_accounts" />

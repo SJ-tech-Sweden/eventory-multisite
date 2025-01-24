@@ -7,6 +7,8 @@ const routes = [
       { path: '/calendar', component: () => import('pages/CalendarPage.vue') },
       { path: '/inventory', component: () => import('pages/inventoryManager.vue') },
       { path: '/login-manager', component: () => import('pages/LoginManager.vue') },
+      { path: '/checkin', component: () => import('src/pages/warehouseCheckin.vue') },
+      { path: '/checkout', component: () => import('src/pages/warehouseCheckout.vue') },
       {
         path: '/packlist/:packlistid/:userid',
         component: () => import('pages/packlistDetail.vue'),
