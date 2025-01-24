@@ -403,7 +403,10 @@ const fetchPacklistDetailsForFilteredJobs = async () => {
           }
         }) || []
       console.info(`Fetched packlist details for ${packlistData}`)
-      packlists.value.push(packlistData)
+      // Check for duplicates before pushing
+      if (!packlists.value.some((pl) => pl.id === packlistData.id)) {
+        packlists.value.push(packlistData)
+      }
     }
   }
 }
