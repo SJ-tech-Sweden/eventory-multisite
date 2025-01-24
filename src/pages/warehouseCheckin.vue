@@ -137,7 +137,7 @@
                       class="no-spin-buttons"
                     />
                     <q-btn icon="add" @click="props.row.return++" />
-                    <q-btn icon="login" @click="returnItem(props.row, packlist.login)" />
+                    <q-btn icon="arrow_upward" @click="returnItem(props.row, packlist.login)" />
                   </div>
                 </q-td>
               </template>

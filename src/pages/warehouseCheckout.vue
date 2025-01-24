@@ -145,7 +145,7 @@
                   </div>
                 </q-td>
               </template>
-              <template v-slot:body-cell-return="props">
+              <template v-slot:body-cell-rent="props">
                 <q-td :props="props">
                   <div class="row no-wrap">
                     <q-btn
@@ -164,7 +164,7 @@
                       class="no-spin-buttons"
                     />
                     <q-btn icon="add" @click="props.row.rent++" />
-                    <q-btn icon="logout" @click="rentItem(props.row, packlist.login)" />
+                    <q-btn icon="arrow_downward" @click="rentItem(props.row, packlist.login)" />
                   </div>
                 </q-td>
               </template>
@@ -258,7 +258,7 @@ const subrentalColumns = [
   },
   { name: 'quantity', align: 'center', label: 'Quantity', field: 'quantity', sortable: true },
   { name: 'out', align: 'center', label: 'Out', field: 'out', sortable: true },
-  { name: 'checkout', align: 'center', label: 'Check in', field: 'checkout', sortable: false },
+  { name: 'checkout', align: 'center', label: 'Check out', field: 'checkout', sortable: false },
   { name: 'supplier', align: 'left', label: 'Supplier', field: 'supplier', sortable: true },
   { name: 'rent', align: 'center', label: 'Rent', field: 'rent', sortable: false },
   {
@@ -402,7 +402,7 @@ const fetchPacklistDetailsForFilteredJobs = async () => {
             rent: subrental.quantity,
           }
         }) || []
-      console.info(`Fetched packlist details for ${packlistData}`)
+      console.info(`Fetched packlist details for ${JSON.stringify(packlistData)}`)
       // Check for duplicates before pushing
       if (!packlists.value.some((pl) => pl.id === packlistData.id)) {
         packlists.value.push(packlistData)
