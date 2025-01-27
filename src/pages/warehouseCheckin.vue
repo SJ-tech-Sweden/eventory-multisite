@@ -25,6 +25,7 @@
               :columns="rentalColumns"
               row-key="id"
               :rows-per-page-options="[0]"
+              :grid="$q.screen.xs"
             >
               <template v-slot:body-cell-checkin="props">
                 <q-td :props="props">
@@ -48,6 +49,41 @@
                   </div>
                 </q-td>
               </template>
+              <template v-slot:item="props">
+                <q-card class="nested-card">
+                  <q-card-section>
+                    <div class="text-subtitle">{{ props.row.name }}</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <div class="text-caption">Quantity: {{ props.row.quantity }}</div>
+                    <div class="text-caption">Out: {{ props.row.out }}</div>
+                    <div class="text-caption">
+                      Checkin:
+                      <div class="row no-wrap">
+                        <q-btn
+                          icon="remove"
+                          @click="props.row.checkin = Math.max(0, props.row.checkin - 1)"
+                        />
+                        <q-input
+                          v-model.number="props.row.checkin"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          dense
+                          borderless
+                          style="width: 40px"
+                          standout
+                        />
+                        <q-btn icon="add" @click="props.row.checkin++" />
+                        <q-btn
+                          icon="login"
+                          @click="checkInItem(props.row, 'rental', packlist.login)"
+                        />
+                      </div>
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </template>
             </q-table>
           </q-card-section>
           <q-card-section v-if="packlist.mappedConsumables.length">
@@ -57,6 +93,7 @@
               :columns="consumableColumns"
               row-key="id"
               :rows-per-page-options="[0]"
+              :grid="$q.screen.xs"
             >
               <template v-slot:body-cell-checkin="props">
                 <q-td :props="props">
@@ -83,6 +120,41 @@
                   </div>
                 </q-td>
               </template>
+              <template v-slot:item="props">
+                <q-card class="nested-card">
+                  <q-card-section>
+                    <div class="text-subtitle">{{ props.row.name }}</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <div class="text-caption">Quantity: {{ props.row.quantity }}</div>
+                    <div class="text-caption">Out: {{ props.row.out }}</div>
+                    <div class="text-caption">
+                      Checkin:
+                      <div class="row no-wrap">
+                        <q-btn
+                          icon="remove"
+                          @click="props.row.checkin = Math.max(0, props.row.checkin - 1)"
+                        />
+                        <q-input
+                          v-model.number="props.row.checkin"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          dense
+                          borderless
+                          style="width: 40px"
+                          standout
+                        />
+                        <q-btn icon="add" @click="props.row.checkin++" />
+                        <q-btn
+                          icon="login"
+                          @click="checkInItem(props.row, 'consumable', packlist.login)"
+                        />
+                      </div>
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </template>
             </q-table>
           </q-card-section>
           <q-card-section v-if="packlist.mappedSubrentals.length">
@@ -92,6 +164,7 @@
               :columns="subrentalColumns"
               row-key="id"
               :rows-per-page-options="[0]"
+              :grid="$q.screen.xs"
             >
               <template v-slot:body-cell-checkin="props">
                 <q-td :props="props">
@@ -140,6 +213,64 @@
                     <q-btn icon="arrow_upward" @click="returnItem(props.row, packlist.login)" />
                   </div>
                 </q-td>
+              </template>
+              <template v-slot:item="props">
+                <q-card class="nested-card">
+                  <q-card-section>
+                    <div class="text-subtitle">{{ props.row.name }}</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <div class="text-caption">Quantity: {{ props.row.quantity }}</div>
+                    <div class="text-caption">Out: {{ props.row.out }}</div>
+                    <div class="text-caption">
+                      Checkin:
+                      <div class="row no-wrap">
+                        <q-btn
+                          icon="remove"
+                          @click="props.row.checkin = Math.max(0, props.row.checkin - 1)"
+                        />
+                        <q-input
+                          v-model.number="props.row.checkin"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          dense
+                          borderless
+                          style="width: 40px"
+                          standout
+                        />
+                        <q-btn icon="add" @click="props.row.checkin++" />
+                        <q-btn
+                          icon="login"
+                          @click="checkInItem(props.row, 'subrental', packlist.login)"
+                        />
+                      </div>
+                    </div>
+                    <div class="text-caption">Supplier: {{ props.row.supplier }}</div>
+                    <div class="text-caption">
+                      Rent:
+                      <div class="row no-wrap">
+                        <q-btn
+                          icon="remove"
+                          @click="props.row.return = Math.max(0, props.row.return - 1)"
+                        />
+                        <q-input
+                          v-model.number="props.row.return"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          dense
+                          borderless
+                          style="width: 40px"
+                          standout
+                        />
+                        <q-btn icon="add" @click="props.row.return++" />
+                        <q-btn icon="arrow_upward" @click="returnItem(props.row, packlist.login)" />
+                      </div>
+                    </div>
+                    <div class="text-caption">Rented Units: {{ props.row.rentedUnits }}</div>
+                  </q-card-section>
+                </q-card>
               </template>
             </q-table>
           </q-card-section>
