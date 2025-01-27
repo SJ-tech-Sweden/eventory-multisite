@@ -409,6 +409,8 @@ const fetchPacklistDetailsForFilteredJobs = async () => {
       }
     }
   }
+  // Sort packlists by startDate
+  packlists.value.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
 }
 
 // Helper function to find an item in a tree by ID
@@ -460,10 +462,13 @@ const checkOutItem = async (item, type, login) => {
         },
       },
     )
+
     $q.notify({
       message: `Successfully checked out ${item.checkout} of ${item.name}`,
       color: 'green',
     })
+    item.out = (item.out ?? 0) + item.checkout
+    item.checkout = item.quantity - item.out
   } catch (error) {
     console.error(`Failed to check out item: ${item.name}`, error)
     $q.notify({
@@ -471,7 +476,6 @@ const checkOutItem = async (item, type, login) => {
       color: 'red',
     })
   }
-  fetchJobs()
 }
 
 // Function to handle return action
@@ -488,10 +492,13 @@ const rentItem = async (item, login) => {
         },
       },
     )
+
     $q.notify({
       message: `Successfully rented ${item.rent} of ${item.name}`,
       color: 'green',
     })
+    item.rentedUnits += item.rent
+    item.rent = item.quantity - item.rentedUnits
   } catch (error) {
     console.error(`Failed to rent item: ${item.name}`, error)
     $q.notify({
@@ -499,7 +506,6 @@ const rentItem = async (item, login) => {
       color: 'red',
     })
   }
-  fetchJobs()
 }
 
 onMounted(() => {

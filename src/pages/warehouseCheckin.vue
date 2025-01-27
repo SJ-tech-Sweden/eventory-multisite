@@ -390,10 +390,13 @@ const checkInItem = async (item, type, login) => {
         },
       },
     )
+
     $q.notify({
       message: `Successfully checked in ${item.checkin} of ${item.name}`,
       color: 'green',
     })
+    item.out -= item.checkin
+    item.checkin = item.out
   } catch (error) {
     console.error(`Failed to check in item: ${item.name}`, error)
     $q.notify({
@@ -401,7 +404,6 @@ const checkInItem = async (item, type, login) => {
       color: 'red',
     })
   }
-  fetchJobs()
 }
 
 // Function to handle return action
@@ -418,10 +420,13 @@ const returnItem = async (item, login) => {
         },
       },
     )
+
     $q.notify({
       message: `Successfully returned ${item.return} of ${item.name}`,
       color: 'green',
     })
+    item.rentedUnits -= item.return
+    item.return = item.rentedUnits
   } catch (error) {
     console.error(`Failed to return item: ${item.name}`, error)
     $q.notify({
@@ -429,7 +434,6 @@ const returnItem = async (item, login) => {
       color: 'red',
     })
   }
-  fetchJobs()
 }
 
 onMounted(() => {
