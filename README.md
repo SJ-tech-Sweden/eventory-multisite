@@ -8,6 +8,8 @@ Under Login manager you can add your logins from the different organisations. Ca
 
 From the calendar you can now add rentals to a existing packlist, if it comes from the sam organisation as the packlist it will just be added as a rental but if it comes from another organisation it will be added as a external subrental.
 
+Warehouse Checkin lets you check in any checked out item from any job no matter which of your organisation it belongs to. Warehouse Checkout is the opposite to that and let you checkout any job that belongs to any of you organisations. In the checkout you can change the default timerange of what jobs you want to view.
+
 One deployed version exists at [eventory.sj-tech.se](https://eventory.sj-tech.se)
 
 ## Install the dependencies
