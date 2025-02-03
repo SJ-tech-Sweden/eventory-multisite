@@ -6,7 +6,13 @@
       </q-banner>
       <q-card-section>
         <div class="text-h6">Add New Login</div>
-        <q-input v-model="username" label="Username" outlined class="q-mb-sm" />
+        <q-input
+          v-model="username"
+          label="Username"
+          outlined
+          class="q-mb-sm"
+          hint="Use your eventory login credentials"
+        />
         <q-input v-model="password" label="Password" type="password" outlined class="q-mb-sm" />
         <q-input
           filled
@@ -34,7 +40,25 @@
         <div class="text-h6">Saved Logins</div>
         <q-list bordered>
           <q-item v-for="login in logins" :key="login.id" clickable>
-            <q-item-section>{{ login.username }}</q-item-section>
+            <q-item-section avatar>
+              <q-avatar size="40px">
+                <q-img :src="login.organisationLogo" />
+              </q-avatar>
+            </q-item-section>
+            <q-item-section>
+              <div>{{ login.username }}</div>
+              <div class="text-caption">{{ login.organisation }}</div>
+            </q-item-section>
+            <q-item-section side>
+              <div
+                :style="{
+                  backgroundColor: login.color,
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                }"
+              ></div>
+            </q-item-section>
             <q-item-section side>
               <q-btn flat icon="refresh" @click.stop="setActiveLogin(login.id)" />
               <q-btn flat icon="delete" color="negative" @click.stop="removeLogin(login.id)" />
