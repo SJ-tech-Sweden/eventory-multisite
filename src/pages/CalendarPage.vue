@@ -114,7 +114,7 @@ const events = ref([])
 const filteredEvents = ref([])
 const showingAllEvents = ref(false) // New state variable
 
-// Function to fetch events from the API
+// Function to fetch events from the API and merge job details (endDate)
 const fetchEvents = async () => {
   events.value = []
   for (const login of loginStore.logins) {
@@ -129,22 +129,38 @@ const fetchEvents = async () => {
           `Fetched ${response.data.length} events for ${login.username} - ${login.organisation}`,
         )
 
-        // Add organisation field to each event
+        // Add organisation fields to each event
         const fetchedEvents = response.data.map((event) => ({
-          ...event, // Spread existing event properties
-          organisation: login.organisation, // Add organisation property
+          ...event,
+          organisation: login.organisation,
           color: login.color,
           organisationLogo: login.organisationLogo,
           userid: login.id,
         }))
 
-        // Sort events by startDate
-        fetchedEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+        // Fetch job details for each event to get endDate
+        const detailPromises = fetchedEvents.map((event) =>
+          axios
+            .get(`/api/jobs/details/${event.id}`, {
+              headers: {
+                Authorization: `Bearer ${login.access_token}`,
+              },
+            })
+            .then((res) => ({
+              ...event,
+              endDate: res.data.endDate || event.startDate, // fallback if missing
+            })),
+        )
+        const eventsWithEndDate = await Promise.all(detailPromises)
 
-        events.value.push(...fetchedEvents)
+        // Sort events by startDate
+        eventsWithEndDate.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+
+        events.value.push(...eventsWithEndDate)
         console.info(`Total events: ${JSON.stringify(events.value)}`)
         console.log(`dateEvents: ${JSON.stringify(dateEvents.value)}`)
-        filterEventsByDateRange(selectedDate.value) // Filter events after fetching
+        console.log('events for dateEvents:', events.value)
+        filterEventsByDateRange(selectedDate.value)
       } catch (error) {
         console.error(`Failed to fetch events for ${login.username}:`, error)
       }
@@ -153,37 +169,47 @@ const fetchEvents = async () => {
 }
 
 const dateEvents = computed(() => {
-  const datesWithEvents = new Set(events.value.map((event) => event.startDate.replace(/-/g, '/')))
+  const datesWithEvents = new Set()
+  for (const event of events.value) {
+    if (!event.startDate || !event.endDate) continue
+    const current = new Date(event.startDate)
+    const end = new Date(event.endDate)
+    if (isNaN(current) || isNaN(end)) continue
+    while (current <= end) {
+      const formatted = current.toISOString().slice(0, 10).replace(/-/g, '/')
+      datesWithEvents.add(formatted)
+      current.setDate(current.getDate() + 1)
+    }
+  }
   return Array.from(datesWithEvents)
 })
 
 const getEventColor = (date) => {
-  console.info(`Date: ${date}`)
-  const formattedDate = date.replace(/\//g, '-') // Format input date if needed
-  console.info(`formattedDate: ${formattedDate}`)
-  const matchingEvent = events.value.find((event) => event.startDate === formattedDate)
-  console.info(`Matching events: ${closestQuasarColor(matchingEvent.color) || 'primary'}`)
-  return closestQuasarColor(matchingEvent.color) || 'primary'
+  const dateStr = date.replace(/\//g, '-')
+  const event = events.value.find(
+    (ev) => ev.startDate && ev.endDate && dateStr >= ev.startDate && dateStr <= ev.endDate,
+  )
+
+  return event && event.color ? closestQuasarColor(event.color) : 'primary'
 }
 
-const filterEventsByDateRange = (range) => {
-  console.info(`Filtering events by date range: ${JSON.stringify(range)}`)
-  showingAllEvents.value = false // Reset showingAllEvents when filtering by date range
-
-  if (range.from && range.to) {
-    // Handle date range
-    const { from, to } = range
-    console.info(`Filtering events between ${from} and ${to}`)
-    filteredEvents.value = events.value.filter((event) => {
-      const eventDate = new Date(event.startDate)
-      return eventDate >= new Date(from) && eventDate <= new Date(to)
-    })
-  } else {
-    // Handle single date
-    const date = range
-    console.info(`Filtering events for date: ${date}`)
-    filteredEvents.value = events.value.filter((event) => event.startDate === date)
+function filterEventsByDateRange(selectedRange) {
+  // selectedRange: { from: 'YYYY/MM/DD', to: 'YYYY/MM/DD' }
+  if (!selectedRange || !selectedRange.from || !selectedRange.to) {
+    filteredEvents.value = events.value
+    return
   }
+
+  // Convert to 'YYYY-MM-DD' for comparison
+  const from = selectedRange.from.replace(/\//g, '-')
+  const to = selectedRange.to.replace(/\//g, '-')
+
+  filteredEvents.value = events.value.filter((event) => {
+    if (!event.startDate || !event.endDate) return false
+    // Event overlaps the selected range if:
+    // event starts before or on the range end, and ends after or on the range start
+    return event.startDate <= to && event.endDate >= from
+  })
 }
 
 const showAllEvents = () => {
@@ -191,34 +217,14 @@ const showAllEvents = () => {
   showingAllEvents.value = true // Set showingAllEvents to true when showing all events
 }
 
-onMounted(() => {
-  fetchEvents()
+onMounted(async () => {
+  await fetchEvents()
 })
 
 // Function to navigate to the pack list page
 function navigateToPackList(packListId, userid) {
   router.push(`/packlist/${packListId}/${userid}`)
 }
-
-// // Function to get the icon based on the status
-// function getIcon(status) {
-//   switch (status) {
-//     case 'confirmed':
-//       return 'done'
-//     case 'returned':
-//       return 'arrow_back'
-//     case 'quotation':
-//       return 'question_mark'
-//     case 'canceled':
-//       return 'close' // Use 'close' instead of 'X' for better compatibility
-//     case 'checked_out':
-//       return 'arrow_forward'
-//     case 'completed':
-//       return 'done_all' // Use 'check_circle' for double checkmarks
-//     default:
-//       return 'help' // Default to a help icon if the status is unknown
-//   }
-// }
 </script>
 
 <style scoped>
