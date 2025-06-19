@@ -17,11 +17,11 @@
   "dependencies": {
     "@primevue/themes": "^4.2.5",
     "@quasar/cli": "^2.4.1",
-    "@quasar/extras": "^1.16.4",
+    "@quasar/extras": "^1.17.0",
     "axios": "^1.8.2",
     "pinia": "^2.0.11",
     "primevue": "^4.2.5",
-    "quasar": "^2.16.0",
+    "quasar": "^2.18.1",
     "vue": "^3.4.18",
     "vue-router": "^4.0.0"
   },
