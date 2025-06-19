@@ -60,6 +60,7 @@
               ></div>
             </q-item-section>
             <q-item-section side>
+              <q-btn icon="edit" flat color="primary" @click="openEditDialog(login)" />
               <q-btn flat icon="refresh" @click.stop="setActiveLogin(login.id)" />
               <q-btn flat icon="delete" color="negative" @click.stop="removeLogin(login.id)" />
             </q-item-section>
@@ -67,6 +68,53 @@
         </q-list>
       </q-card-section>
     </q-card>
+
+    <!-- Edit Login Dialog -->
+    <q-dialog v-model="editDialog">
+      <q-card style="min-width: 300px; max-width: 700px">
+        <q-card-section>
+          <div
+            class="row q-gutter-md q-col-gutter-md"
+            :class="$q.screen.gt.sm ? 'flex-row' : 'flex-column'"
+          >
+            <!-- Left: logo, org name, username, password -->
+            <div class="col column items-start" style="min-width: 220px">
+              <div class="row items-center q-mb-md">
+                <q-avatar size="56px" v-if="selectedLogin?.organisationLogo" class="q-mr-md">
+                  <q-img :src="selectedLogin.organisationLogo" />
+                </q-avatar>
+                <div>
+                  <div class="text-h6">{{ selectedLogin?.organisation }}</div>
+                  <div class="text-subtitle2">Edit Login</div>
+                </div>
+              </div>
+              <q-input v-model="editedUsername" label="Username" outlined dense class="q-mb-md" />
+              <q-input
+                v-model="editedPassword"
+                label="Password"
+                type="password"
+                outlined
+                dense
+                class="q-mb-md"
+              />
+            </div>
+            <!-- Right: color picker -->
+            <div class="col-auto flex flex-center">
+              <q-color
+                v-model="editedColor"
+                format-model="hex"
+                label="Color"
+                style="width: 180px"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Save" color="primary" @click="saveLogin" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -82,6 +130,11 @@ const password = ref('')
 const color = ref('')
 const bannerClass = ref('')
 const message = ref('')
+const editDialog = ref(false)
+const selectedLogin = ref(null)
+const editedColor = ref('#1976d2') // Default Quasar primary
+const editedUsername = ref('')
+const editedPassword = ref('')
 
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
@@ -120,6 +173,25 @@ const removeLogin = (id) => {
 // Function to set the active login or right now only refreshes the token and ogranisation info
 const setActiveLogin = (id) => {
   loginStore.setActiveLogin(id)
+}
+
+// Open the edit login dialog
+function openEditDialog(login) {
+  selectedLogin.value = login
+  editedColor.value = login.color || '#1976d2'
+  editedUsername.value = login.username || ''
+  editedPassword.value = login.password || ''
+  editDialog.value = true
+}
+
+// Save the edited login
+function saveLogin() {
+  if (selectedLogin.value) {
+    selectedLogin.value.color = editedColor.value
+    selectedLogin.value.username = editedUsername.value
+    selectedLogin.value.password = editedPassword.value
+    // Optionally persist changes here
+  }
 }
 
 const logins = loginStore.logins
