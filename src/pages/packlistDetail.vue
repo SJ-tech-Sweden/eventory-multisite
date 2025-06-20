@@ -19,14 +19,14 @@
 
           <div class="q-pa-md q-gutter-sm">
             <q-btn color="primary" label="Toggle everything" @click="toggleEverything" />
-            <q-btn label="Add Item" color="primary" @click="showAddItemDialog = true" />
+            <q-btn label="Add Rental" color="primary" @click="showAddItemDialog = true" />
           </div>
 
           <!-- Dialog for adding items to the packlist -->
           <q-dialog v-model="showAddItemDialog" full-width>
             <q-card>
               <q-card-section>
-                <div class="text-h6">Add Item to Packlist</div>
+                <div class="text-h6">Add rentals to Packlist</div>
                 <q-input ref="filterRef" filled v-model="filter" label="Filter">
                   <template v-slot:append>
                     <q-icon
@@ -41,28 +41,49 @@
                 <div class="tree-container">
                   <!-- Tree view for inventory items -->
                   <q-tree
-                    :nodes="filteredInventory"
+                    :nodes="filteredInventoryWithTickable"
                     node-key="id"
-                    :key="filteredInventory.length"
                     :filter-method="filterMethod"
                     ref="inventoryTree"
                     v-model:expanded="expandedKeysInventory"
                     @update:expanded="handleExpandedKeys"
                     v-model:ticked="tickedRentals"
-                    tick-strategy="strict"
+                    tick-strategy="none"
                     full-width
                   >
                     <template v-slot:default-header="scope">
                       <q-item>
-                        <q-item-section
-                          >{{ scope.node.name }} - {{ scope.node.organisation }}</q-item-section
-                        >
+                        <q-item-section>
+                          {{ scope.node.name }} - {{ scope.node.organisation }}
+                        </q-item-section>
                         <q-item-section>
                           <q-input
                             v-if="!scope.node.children"
                             v-model="scope.node.quantity"
                             type="number"
                             min="0"
+                          />
+                        </q-item-section>
+                        <!-- Only show tickbox if node is tickable -->
+                        <q-item-section v-if="scope.node.tickable" side>
+                          <q-checkbox
+                            :model-value="tickedRentals.includes(scope.node.id)"
+                            @update:model-value="
+                              (val) => {
+                                if (val) {
+                                  if (!tickedRentals.includes(scope.node.id)) {
+                                    tickedRentals.push(scope.node.id)
+                                  }
+                                } else {
+                                  const idx = tickedRentals.indexOf(scope.node.id)
+                                  if (idx !== -1) {
+                                    tickedRentals.splice(idx, 1)
+                                  }
+                                }
+                                console.log('tickedRentals after update:', tickedRentals)
+                              }
+                            "
+                            @click.stop
                           />
                         </q-item-section>
                       </q-item>
@@ -160,7 +181,7 @@
 
 <script setup>
 // Import necessary modules and components
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -316,21 +337,22 @@ const fetchInventory = async () => {
 
 // Add selected rentals to packlist
 const addRental = async () => {
-  const selectedRentals = tickedRentals.value.map((id) => {
-    const node = findNodeById(filteredInventory.value, id)
-    console.info(node)
-    return {
-      id: node.id,
-      name: node.name,
-      quantity: node.quantity,
-      dailyRate: node.dailyRate,
-      weight: node.weight,
-      supplier: node.organisation,
-      note: node.note,
-      userid: node.userid,
-    }
-  })
-  for (const rental of selectedRentals) {
+  const rentalsToAdd = tickedRentals.value
+    .map((id) => {
+      const node = findNodeById(filteredInventoryWithTickable.value, id)
+      return node
+        ? {
+            id: node.id,
+            name: node.name,
+            quantity: node.quantity,
+            userid: node.userid,
+          }
+        : null
+    })
+    .filter(Boolean)
+
+  console.log('Rentals to add:', rentalsToAdd)
+  for (const rental of rentalsToAdd) {
     const payload = {
       packList_id: route.params.packlistid,
       quantity: rental.quantity,
@@ -350,7 +372,7 @@ const addRental = async () => {
       const rentalLogin = loginStore.logins.find(
         (login) => String(login.id) === String(rental.userid),
       )
-      console.info(rentalLogin)
+      console.info(`Rentallogin ${rentalLogin} found for rental ${rental.name}`)
       const response = await axios.get(`/api/rentals/${rental.id}`, {
         headers: {
           Authorization: `Bearer ${rentalLogin.access_token}`,
@@ -369,25 +391,21 @@ const addRental = async () => {
       })
     }
   }
-  console.info(selectedRentals)
+  console.info(rentalsToAdd)
   fetchPacklist()
   $q.notify({
-    message: `${selectedRentals.length} rentals was added.`,
+    message: `${rentalsToAdd.length} rentals was added.`,
     color: 'green',
   })
 }
 
 // Find node by ID in the inventory tree
-const findNodeById = (nodes, id) => {
+function findNodeById(nodes, id) {
   for (const node of nodes) {
-    if (node.id === id) {
-      return node
-    }
+    if (node.id === id) return node
     if (node.children) {
       const found = findNodeById(node.children, id)
-      if (found) {
-        return found
-      }
+      if (found) return found
     }
   }
   return null
@@ -453,10 +471,60 @@ const filteredInventory = computed(() => {
   return filterNodes(inventory.value, filter.value)
 })
 
+// Mark nodes as tickable or not based on children existence
+function markTickable(nodes) {
+  return nodes.map((node) => {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0
+    return {
+      ...node,
+      tickable: !hasChildren,
+      quantity: !hasChildren
+        ? typeof node.quantity === 'number'
+          ? node.quantity
+          : 1 // default to 1
+        : undefined,
+      children: hasChildren ? markTickable(node.children) : undefined,
+    }
+  })
+}
+
+const filteredInventoryWithTickable = computed(() => markTickable(filteredInventory.value))
+
+// Usage:
+filteredInventory.value = markTickable(filteredInventory.value)
+
+// When you receive or build your data:
+function ensureQuantities(nodes) {
+  nodes.forEach((node) => {
+    if (!node.children) {
+      if (typeof node.quantity !== 'number') node.quantity = 1
+    } else {
+      ensureQuantities(node.children)
+    }
+  })
+}
+ensureQuantities(filteredInventory.value)
+
 // Fetch data when the component is mounted
 onMounted(() => {
   fetchPacklist()
   fetchInventory()
+})
+
+// Watch for changes in tickedRentals
+watch(tickedRentals, (newVal) => {
+  console.log('tickedRentals changed:', newVal)
+})
+
+// Attach rentalLogin info to inventory items
+inventory.value.forEach((item) => {
+  item.rentalLogin = login // or whatever login info you want to attach
+  if (item.children) {
+    item.children.forEach((child) => {
+      child.rentalLogin = login
+      // ...and so on recursively if needed
+    })
+  }
 })
 </script>
 
