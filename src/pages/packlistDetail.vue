@@ -115,6 +115,27 @@
             <Column field="quantity" header="Quantity" sortable></Column>
             <Column field="weight" header="Weight" sortable></Column>
             <Column field="note" header="Note" sortable></Column>
+            <Column field="actions" header="Actions" sortable>
+              <template v-slot:body="slotProps">
+                <q-item>
+                  <q-item-section>
+                    <!-- Add any custom content here if needed -->
+                  </q-item-section>
+                  <q-item-section
+                    side
+                    v-if="!slotProps.node.children || slotProps.node.children.length === 0"
+                  >
+                    <q-btn
+                      icon="delete"
+                      color="negative"
+                      flat
+                      @click="deletePacklistItem(slotProps.node, '/api/pack-list-rentals')"
+                      label="Delete"
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
+            </Column>
           </TreeTable>
 
           <div class="text-h6">Consumables</div>
@@ -133,6 +154,27 @@
             <Column field="quantity" header="Quantity" sortable></Column>
             <Column field="weight" header="Weight" sortable></Column>
             <Column field="note" header="Note" sortable></Column>
+            <Column field="actions" header="Actions" sortable>
+              <template v-slot:body="slotProps">
+                <q-item>
+                  <q-item-section>
+                    <!-- Add any custom content here if needed -->
+                  </q-item-section>
+                  <q-item-section
+                    side
+                    v-if="!slotProps.node.children || slotProps.node.children.length === 0"
+                  >
+                    <q-btn
+                      icon="delete"
+                      color="negative"
+                      flat
+                      @click="deletePacklistItem(slotProps.node, '/api/pack-list-consumables')"
+                      label="Delete"
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
+            </Column>
           </TreeTable>
 
           <div class="text-h6">Internal subrentals</div>
@@ -152,6 +194,27 @@
             <Column field="weight" header="Weight" sortable></Column>
             <Column field="supplier" header="Supplier" sortable></Column>
             <Column field="note" header="Note" sortable></Column>
+            <Column field="actions" header="Actions" sortable>
+              <template v-slot:body="slotProps">
+                <q-item>
+                  <q-item-section>
+                    <!-- Add any custom content here if needed -->
+                  </q-item-section>
+                  <q-item-section
+                    side
+                    v-if="!slotProps.node.children || slotProps.node.children.length === 0"
+                  >
+                    <q-btn
+                      icon="delete"
+                      color="negative"
+                      flat
+                      @click="deletePacklistItem(slotProps.node, '/api/pack-list-subrentals')"
+                      label="Delete"
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
+            </Column>
           </TreeTable>
 
           <div class="text-h6">External subrentals</div>
@@ -171,6 +234,27 @@
             <Column field="weight" header="Weight" sortable></Column>
             <Column field="supplier" header="Supplier" sortable></Column>
             <Column field="note" header="Note" sortable></Column>
+            <Column field="actions" header="Actions" sortable>
+              <template v-slot:body="slotProps">
+                <q-item>
+                  <q-item-section>
+                    <!-- Add any custom content here if needed -->
+                  </q-item-section>
+                  <q-item-section
+                    side
+                    v-if="!slotProps.node.children || slotProps.node.children.length === 0"
+                  >
+                    <q-btn
+                      icon="delete"
+                      color="negative"
+                      flat
+                      @click="deletePacklistItem(slotProps.node, '/api/pack-list-subrentals')"
+                      label="Delete"
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
+            </Column>
           </TreeTable>
         </div>
         <div v-else>Loading...</div>
@@ -526,6 +610,34 @@ inventory.value.forEach((item) => {
     })
   }
 })
+
+async function deletePacklistItem(item, endpoint) {
+  if (!item || !item.id || !login.value.access_token) {
+    console.warn('Missing item or login info')
+    return
+  }
+  if (!confirm('Are you sure you want to delete this item?')) return
+
+  try {
+    await axios.delete(`${endpoint}/${item.id}`, {
+      headers: {
+        Authorization: `Bearer ${login.value.access_token}`,
+      },
+    })
+    fetchPacklist() // Refresh the packlist after deletion
+    $q.notify({
+      type: 'positive',
+      message: 'Item deleted successfully!',
+    })
+    console.info('Item deleted:', item.id)
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to delete item.',
+    })
+    console.error('Failed to delete item:', error)
+  }
+}
 </script>
 
 <style scoped>
