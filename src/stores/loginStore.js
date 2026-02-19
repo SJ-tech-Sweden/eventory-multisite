@@ -2,6 +2,7 @@
 // Import the required functions
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { useBackendStore } from './backendStore'
 
 // Define the store
 export const useLoginStore = defineStore('loginStore', {
@@ -25,9 +26,66 @@ export const useLoginStore = defineStore('loginStore', {
       const result = await this.authenticateLogin(newLogin)
       if (result.success) {
         this.logins.push(newLogin)
+        await this._persistLogin(newLogin)
         this.saveToLocalStorage()
       }
       return result
+    },
+
+    // Persist a login to the backend (no-op when backend is not configured)
+    async _persistLogin(login) {
+      const backend = useBackendStore()
+      if (!backend.isConfigured || !backend.isLoggedIn) return
+      try {
+        const payload = {
+          label: login.organisation || login.username,
+          username: login.username,
+          password: login.password,
+          color: login.color,
+        }
+        const response = await axios.post(`${backend.backendUrl}/logins`, payload, {
+          headers: backend.authHeaders(),
+        })
+        // Store the backend ID so we can update/delete it later
+        login.backendId = response.data.id
+      } catch (error) {
+        console.warn('Could not persist login to backend:', error)
+      }
+    },
+
+    // Load logins from the backend (falls back to localStorage when unavailable)
+    async loadLoginsFromBackend() {
+      const backend = useBackendStore()
+      if (!backend.isConfigured || !backend.isLoggedIn) return false
+      try {
+        const response = await axios.get(`${backend.backendUrl}/logins`, {
+          headers: backend.authHeaders(),
+        })
+        // Merge backend logins: keep runtime auth state for any already in memory
+        const merged = response.data.map((bl) => {
+          const existing = this.logins.find((l) => l.backendId === bl.id)
+          return existing
+            ? existing
+            : {
+                // Generate a unique frontend ID separate from the backend ID
+                id: Date.now() + Math.random(),
+                backendId: bl.id,
+                username: bl.username,
+                password: bl.password,
+                color: bl.color,
+                access_token: null,
+                organisation: null,
+                firstName: null,
+                lastName: null,
+              }
+        })
+        this.logins = merged
+        this.saveToLocalStorage()
+        return true
+      } catch (error) {
+        console.warn('Could not load logins from backend:', error)
+        return false
+      }
     },
 
     // This function authenticates a login and fetches the user information
@@ -78,9 +136,22 @@ export const useLoginStore = defineStore('loginStore', {
     },
 
     removeLogin(id) {
+      const login = this.logins.find((l) => l.id === id)
       this.logins = this.logins.filter((login) => login.id !== id)
       console.info('Removed login:', id)
       this.saveToLocalStorage()
+
+      // Remove from backend if available
+      if (login?.backendId) {
+        const backend = useBackendStore()
+        if (backend.isConfigured && backend.isLoggedIn) {
+          axios
+            .delete(`${backend.backendUrl}/logins/${login.backendId}`, {
+              headers: backend.authHeaders(),
+            })
+            .catch((err) => console.warn('Could not delete login from backend:', err))
+        }
+      }
     },
 
     setActiveLogin(id) {

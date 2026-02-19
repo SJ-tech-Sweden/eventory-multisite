@@ -34,3 +34,10 @@ yarn-error.log*
 
 # Local Netlify folder
 .netlify
+
+# Python backend artifacts
+backend/__pycache__/
+backend/*.pyc
+backend/.venv/
+backend/eventory_backend.db
+backend/.env
