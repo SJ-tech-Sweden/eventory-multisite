@@ -22,6 +22,38 @@
             <q-btn label="Add Rental" color="primary" @click="showAddItemDialog = true" />
           </div>
 
+          <!-- Dialog for editing a packlist item -->
+          <q-dialog v-model="showEditDialog">
+            <q-card style="min-width: 350px">
+              <q-card-section>
+                <div class="text-h6">Edit Item</div>
+              </q-card-section>
+              <q-card-section class="q-gutter-md">
+                <q-input
+                  v-model.number="editForm.quantity"
+                  type="number"
+                  min="0"
+                  label="Quantity"
+                  filled
+                />
+                <q-input v-model="editForm.note" label="Note" filled />
+                <q-input
+                  v-model.number="editForm.discountMultiplier"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  label="Discount Multiplier"
+                  filled
+                />
+              </q-card-section>
+              <q-card-actions align="right">
+                <q-btn flat label="Cancel" color="primary" v-close-popup />
+                <q-btn flat label="Save" color="primary" @click="saveEdit()" />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
+
           <!-- Dialog for adding items to the packlist -->
           <q-dialog v-model="showAddItemDialog" full-width>
             <q-card>
@@ -126,6 +158,13 @@
                     v-if="!slotProps.node.children || slotProps.node.children.length === 0"
                   >
                     <q-btn
+                      icon="edit"
+                      color="primary"
+                      flat
+                      @click="openEditDialog(slotProps.node, '/api/pack-list-rentals')"
+                      label="Edit"
+                    />
+                    <q-btn
                       icon="delete"
                       color="negative"
                       flat
@@ -164,6 +203,13 @@
                     side
                     v-if="!slotProps.node.children || slotProps.node.children.length === 0"
                   >
+                    <q-btn
+                      icon="edit"
+                      color="primary"
+                      flat
+                      @click="openEditDialog(slotProps.node, '/api/pack-list-consumables')"
+                      label="Edit"
+                    />
                     <q-btn
                       icon="delete"
                       color="negative"
@@ -205,6 +251,13 @@
                     v-if="!slotProps.node.children || slotProps.node.children.length === 0"
                   >
                     <q-btn
+                      icon="edit"
+                      color="primary"
+                      flat
+                      @click="openEditDialog(slotProps.node, '/api/pack-list-subrentals')"
+                      label="Edit"
+                    />
+                    <q-btn
                       icon="delete"
                       color="negative"
                       flat
@@ -244,6 +297,13 @@
                     side
                     v-if="!slotProps.node.children || slotProps.node.children.length === 0"
                   >
+                    <q-btn
+                      icon="edit"
+                      color="primary"
+                      flat
+                      @click="openEditDialog(slotProps.node, '/api/pack-list-subrentals')"
+                      label="Edit"
+                    />
                     <q-btn
                       icon="delete"
                       color="negative"
@@ -290,6 +350,12 @@ const inventoryTree = ref(null)
 const isExpanded = ref(false)
 const expandedKeysInventory = ref([])
 const tickedRentals = ref([])
+
+// Editing existing items
+const showEditDialog = ref(false)
+const editItem = ref(null)
+const editEndpoint = ref('')
+const editForm = ref({ quantity: 1, note: '', discountMultiplier: 1 })
 
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
@@ -636,6 +702,44 @@ async function deletePacklistItem(item, endpoint) {
       message: 'Failed to delete item.',
     })
     console.error('Failed to delete item:', error)
+  }
+}
+
+function openEditDialog(item, endpoint) {
+  editItem.value = item
+  editEndpoint.value = endpoint
+  editForm.value = {
+    quantity: item.data.quantity ?? 1,
+    note: item.data.note ?? '',
+    discountMultiplier: item.data.discountMultiplier ?? 1,
+  }
+  showEditDialog.value = true
+}
+
+async function saveEdit() {
+  if (!editItem.value || !login.value.access_token) {
+    console.warn('Missing item or login info')
+    return
+  }
+  try {
+    await axios.patch(`${editEndpoint.value}/${editItem.value.id}`, editForm.value, {
+      headers: {
+        Authorization: `Bearer ${login.value.access_token}`,
+      },
+    })
+    showEditDialog.value = false
+    fetchPacklist()
+    $q.notify({
+      type: 'positive',
+      message: 'Item updated successfully!',
+    })
+    console.info('Item updated:', editItem.value.id)
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to update item.',
+    })
+    console.error('Failed to update item:', error)
   }
 }
 </script>
