@@ -31,7 +31,7 @@
         <div class="text-h6" v-else>Events on {{ selectedDate }}</div>
 
         <q-card v-for="event in filteredEvents" :key="event.id">
-          <q-item-section>
+          <q-card-section class="relative-position">
             <div class="avatar-wrapper">
               <q-avatar>
                 <q-img
@@ -47,7 +47,7 @@
             </div>
             <div class="text-caption">Start Date: {{ event.startDate }}</div>
             <div class="text-caption">organisation: {{ event.organisation }}</div>
-          </q-item-section>
+          </q-card-section>
           <q-item-label header>Pack Lists</q-item-label>
           <q-list>
             <q-item v-for="packList in event.packLists" :key="packList.id">
@@ -231,6 +231,10 @@ function navigateToPackList(packListId, userid) {
 .q-card {
   max-width: 600px;
   margin: 0 auto 20px auto;
+}
+
+.relative-position {
+  position: relative;
 }
 
 .avatar-wrapper {

@@ -30,7 +30,7 @@
       </q-card-section>
       <q-card-section>
         <q-card v-for="packlist in packlists" :key="packlist.id" class="nested-card">
-          <q-card-section>
+          <q-card-section class="relative-position">
             <q-avatar class="responsive-avatar" size="100px">
               <q-img :src="packlist.organisationLogo"></q-img>
             </q-avatar>
@@ -643,3 +643,28 @@ onMounted(() => {
   fetchJobs()
 })
 </script>
+
+<style scoped>
+.nested-card {
+  margin: 16px;
+}
+.q-card {
+  width: 100%;
+  margin: 0 auto 20px auto;
+}
+.relative-position {
+  position: relative;
+}
+.responsive-avatar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+@media (max-width: 600px) {
+  .responsive-avatar {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+  }
+}
+</style>
