@@ -20,6 +20,7 @@
           <div class="q-pa-md q-gutter-sm">
             <q-btn color="primary" label="Toggle everything" @click="toggleEverything" />
             <q-btn label="Add Rental" color="primary" @click="showAddItemDialog = true" />
+            <q-btn label="Add Consumable" color="primary" @click="showAddConsumableDialog = true" />
           </div>
 
           <!-- Dialog for adding items to the packlist -->
@@ -94,6 +95,83 @@
               <q-card-actions align="right">
                 <q-btn flat label="Cancel" color="primary" v-close-popup />
                 <q-btn flat label="Add rentals" color="primary" @click="addRental()" />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
+
+          <!-- Dialog for adding consumables to the packlist -->
+          <q-dialog v-model="showAddConsumableDialog" full-width>
+            <q-card>
+              <q-card-section>
+                <div class="text-h6">Add consumables to Packlist</div>
+                <q-input ref="consumableFilterRef" filled v-model="consumableFilter" label="Filter">
+                  <template v-slot:append>
+                    <q-icon
+                      v-if="consumableFilter !== ''"
+                      name="clear"
+                      class="cursor-pointer"
+                      @click="resetConsumableFilter"
+                    />
+                  </template>
+                </q-input>
+                <q-btn
+                  :label="consumableExpandAllLabel"
+                  @click="toggleConsumableExpandAll"
+                  class="q-mt-md"
+                />
+                <div class="tree-container">
+                  <q-tree
+                    :nodes="filteredConsumablesWithTickable"
+                    node-key="id"
+                    :filter-method="filterMethod"
+                    ref="consumableInventoryTree"
+                    v-model:expanded="expandedKeysConsumableInventory"
+                    @update:expanded="handleConsumableExpandedKeys"
+                    v-model:ticked="tickedConsumables"
+                    tick-strategy="none"
+                    full-width
+                  >
+                    <template v-slot:default-header="scope">
+                      <q-item>
+                        <q-item-section>
+                          {{ scope.node.name }} - {{ scope.node.organisation }}
+                        </q-item-section>
+                        <q-item-section>
+                          <q-input
+                            v-if="!scope.node.children"
+                            v-model="scope.node.quantity"
+                            type="number"
+                            min="0"
+                          />
+                        </q-item-section>
+                        <q-item-section v-if="scope.node.tickable" side>
+                          <q-checkbox
+                            :model-value="tickedConsumables.includes(scope.node.id)"
+                            @update:model-value="
+                              (val) => {
+                                if (val) {
+                                  if (!tickedConsumables.includes(scope.node.id)) {
+                                    tickedConsumables.push(scope.node.id)
+                                  }
+                                } else {
+                                  const idx = tickedConsumables.indexOf(scope.node.id)
+                                  if (idx !== -1) {
+                                    tickedConsumables.splice(idx, 1)
+                                  }
+                                }
+                              }
+                            "
+                            @click.stop
+                          />
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-tree>
+                </div>
+              </q-card-section>
+              <q-card-actions align="right">
+                <q-btn flat label="Cancel" color="primary" v-close-popup />
+                <q-btn flat label="Add consumables" color="primary" @click="addConsumable()" />
               </q-card-actions>
             </q-card>
           </q-dialog>
@@ -291,6 +369,16 @@ const isExpanded = ref(false)
 const expandedKeysInventory = ref([])
 const tickedRentals = ref([])
 
+// Adding consumables popup
+const showAddConsumableDialog = ref(false)
+const consumablesInventory = ref([])
+const consumableFilter = ref('')
+const consumableFilterRef = ref(null)
+const consumableInventoryTree = ref(null)
+const isConsumableExpanded = ref(false)
+const expandedKeysConsumableInventory = ref([])
+const tickedConsumables = ref([])
+
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
 loginStore.startTokenRefresh()
@@ -419,6 +507,32 @@ const fetchInventory = async () => {
   }
 }
 
+// Get consumables inventory data for all logins
+const fetchConsumablesInventory = async () => {
+  consumablesInventory.value = []
+  for (const login of loginStore.logins) {
+    if (login.access_token) {
+      try {
+        const response = await axios.get('/api/inventory-consumables', {
+          headers: {
+            Authorization: `Bearer ${login.access_token}`,
+          },
+        })
+        console.info(`Fetched consumables for ${login.username} - ${login.organisation}`)
+        const properties = {
+          organisation: login.organisation,
+          organisationLogo: login.organisationLogo,
+          userid: login.id,
+        }
+        const fetchedConsumables = addPropertiesToTree(response.data, properties)
+        consumablesInventory.value.push(...fetchedConsumables)
+      } catch (error) {
+        console.error(`Failed to fetch consumables for ${login.username}:`, error)
+      }
+    }
+  }
+}
+
 // Add selected rentals to packlist
 const addRental = async () => {
   const rentalsToAdd = tickedRentals.value
@@ -483,6 +597,53 @@ const addRental = async () => {
   })
 }
 
+// Add selected consumables to packlist
+const addConsumable = async () => {
+  const consumablesToAdd = tickedConsumables.value
+    .map((id) => {
+      const node = findNodeById(filteredConsumablesWithTickable.value, id)
+      return node
+        ? {
+            id: node.id,
+            name: node.name,
+            quantity: node.quantity,
+            userid: node.userid,
+          }
+        : null
+    })
+    .filter(Boolean)
+
+  console.log('Consumables to add:', consumablesToAdd)
+  for (const consumable of consumablesToAdd) {
+    const payload = {
+      packList_id: route.params.packlistid,
+      consumable_id: consumable.id,
+      quantity: consumable.quantity,
+      discountMultiplier: 1,
+      note: '',
+    }
+    try {
+      await axios.post('/api/pack-list-consumables', payload, {
+        headers: {
+          Authorization: `Bearer ${login.value.access_token}`,
+        },
+      })
+    } catch (error) {
+      console.error(`Failed to add consumable ${consumable.name}:`, error)
+      $q.notify({
+        type: 'negative',
+        message: `Failed to add consumable: ${consumable.name}`,
+      })
+    }
+  }
+  showAddConsumableDialog.value = false
+  fetchPacklist()
+  $q.notify({
+    message: `${consumablesToAdd.length} consumables were added.`,
+    color: 'green',
+  })
+}
+
 // Find node by ID in the inventory tree
 function findNodeById(nodes, id) {
   for (const node of nodes) {
@@ -498,6 +659,11 @@ function findNodeById(nodes, id) {
 const resetFilter = () => {
   filter.value = ''
   filterRef.value.focus()
+}
+
+const resetConsumableFilter = () => {
+  consumableFilter.value = ''
+  consumableFilterRef.value.focus()
 }
 
 const filterMethod = (node, filter) => {
@@ -589,10 +755,46 @@ function ensureQuantities(nodes) {
 }
 ensureQuantities(filteredInventory.value)
 
+const toggleConsumableExpandAll = () => {
+  if (!isConsumableExpanded.value) {
+    if (consumableInventoryTree.value) {
+      consumableInventoryTree.value.expandAll()
+    }
+  } else {
+    if (consumableInventoryTree.value) {
+      consumableInventoryTree.value.collapseAll()
+    }
+  }
+}
+
+const consumableExpandAllLabel = computed(() => {
+  if (isConsumableExpanded.value) {
+    return 'Collapse All'
+  }
+  return 'Expand All'
+})
+
+// Handle expanded keys in the consumable inventory tree
+const handleConsumableExpandedKeys = () => {
+  isConsumableExpanded.value = expandedKeysConsumableInventory.value.length > 0
+}
+
+const filteredConsumablesInventory = computed(() => {
+  if (!consumableFilter.value) {
+    return consumablesInventory.value
+  }
+  return filterNodes(consumablesInventory.value, consumableFilter.value)
+})
+
+const filteredConsumablesWithTickable = computed(() =>
+  markTickable(filteredConsumablesInventory.value),
+)
+
 // Fetch data when the component is mounted
 onMounted(() => {
   fetchPacklist()
   fetchInventory()
+  fetchConsumablesInventory()
 })
 
 // Watch for changes in tickedRentals
