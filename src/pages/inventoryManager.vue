@@ -18,6 +18,24 @@
       <template v-slot:default-header="scope">
         <q-item @click="navigateToInventoryDetail(scope.node)" clickable>
           <q-item-section>{{ scope.node.name }} - {{ scope.node.organisation }}</q-item-section>
+          <q-item-section
+            side
+            v-if="
+              (!scope.node.children || !scope.node.children.length) &&
+              scope.node.stockLevel !== undefined
+            "
+          >
+            <q-badge
+              :color="
+                scope.node.stockLevel > 0
+                  ? 'green'
+                  : scope.node.stockLevel === 0
+                    ? 'orange'
+                    : 'red'
+              "
+              :label="`Available: ${scope.node.stockLevel}`"
+            />
+          </q-item-section>
         </q-item>
       </template>
     </q-tree>
