@@ -12,6 +12,22 @@ Warehouse Checkin lets you check in any checked out item from any job no matter 
 
 One deployed version exists at [eventory.sj-tech.se](https://eventory.sj-tech.se)
 
+## Optional FastAPI backend
+
+The app ships with an optional Python/FastAPI backend (see [`backend/`](./backend/README.md))
+that adds:
+
+- **User management** – register/login with a username and password.
+- **Server-side credential storage** – Eventory organisation logins are stored
+  per user in a database instead of browser `localStorage`.
+- **Eventory proxy** – the backend can forward requests to the Eventory API to
+  simplify CORS handling.
+
+The frontend detects whether a backend URL has been configured (via
+**Backend Settings** in the side menu) and automatically switches between
+browser-only mode and backend mode. **The site works perfectly without the
+backend.**
+
 ## Install the dependencies
 
 ```bash

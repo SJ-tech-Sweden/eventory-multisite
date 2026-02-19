@@ -63,6 +63,13 @@
           </q-item-section>
           <q-item-section>Login Manager</q-item-section>
         </q-item>
+
+        <q-item clickable to="/backend-settings">
+          <q-item-section avatar>
+            <q-icon name="dns" />
+          </q-item-section>
+          <q-item-section>Backend Settings</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
