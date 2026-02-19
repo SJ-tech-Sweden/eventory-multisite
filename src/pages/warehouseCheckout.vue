@@ -42,6 +42,13 @@
             </div>
             <div class="text-subtitle">Organisation: {{ packlist.organisation }}</div>
           </q-card-section>
+          <q-card-actions>
+            <q-btn
+              color="primary"
+              label="View Pack List"
+              @click="navigateToPackList(packlist.id, packlist.login.id)"
+            />
+          </q-card-actions>
           <q-card-section>
             <div class="text-h6">Rentals</div>
             <q-table
@@ -311,6 +318,7 @@
 // Import necessary modules and components
 import { ref, onMounted, computed } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useQuasar } from 'quasar'
 import { getIcon } from 'src/utils/getIcon'
@@ -319,6 +327,7 @@ import { closestQuasarColor } from 'src/utils/colorUtils'
 // Define the login store
 const loginStore = useLoginStore()
 const $q = useQuasar()
+const router = useRouter()
 const jobs = ref([])
 
 // Sort by date
@@ -637,6 +646,11 @@ const rentItem = async (item, login) => {
       color: 'red',
     })
   }
+}
+
+// Function to navigate to the pack list detail page
+const navigateToPackList = (packlistId, userId) => {
+  router.push(`/packlist/${packlistId}/${userId}`)
 }
 
 onMounted(() => {
