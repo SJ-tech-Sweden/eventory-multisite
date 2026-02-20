@@ -722,7 +722,7 @@ async function saveEdit() {
     return
   }
   try {
-    await axios.patch(`${editEndpoint.value}/${editItem.value.id}`, editForm.value, {
+    await axios.put(`${editEndpoint.value}/${editItem.value.id}`, editForm.value, {
       headers: {
         Authorization: `Bearer ${login.value.access_token}`,
       },
