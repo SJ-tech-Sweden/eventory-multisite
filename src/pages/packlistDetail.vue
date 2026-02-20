@@ -452,6 +452,29 @@ const getLeafNodes = (nodes) => {
   return leaves
 }
 
+// Compute the minimum available quantity across every day in [startDate, endDate]
+// using the same day-by-day logic as the calendar in inventoryDetail.vue
+const computeMinAvailability = (stockLevel, allPackLists, startDate, endDate) => {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  let minAvailable = stockLevel
+
+  for (let d = new Date(start); d <= end; d = new Date(d.setDate(d.getDate() + 1))) {
+    const dateStr = d.toISOString().slice(0, 10)
+    let available = stockLevel
+    allPackLists.forEach((pl) => {
+      if (dateStr >= pl.startDate && dateStr <= pl.endDate) {
+        available -= pl.quantity
+      }
+    })
+    if (available < minAvailable) {
+      minAvailable = available
+    }
+  }
+
+  return minAvailable
+}
+
 // Fetch availability for all inventory leaf nodes at the packlist dates
 const fetchInventoryAvailability = async () => {
   if (!packlist.value || !inventory.value.length) return
@@ -460,44 +483,51 @@ const fetchInventoryAvailability = async () => {
   const endDate = packlist.value.endDate
 
   loadingAvailability.value = true
+  inventoryAvailability.value = {}
 
   const leaves = getLeafNodes(inventory.value)
-
-  const results = await Promise.allSettled(
-    leaves.map(async (leaf) => {
-      const loginForItem = loginStore.logins.find((l) => String(l.id) === String(leaf.userid))
-      if (!loginForItem?.access_token) return null
-
-      const response = await axios.get(`/api/rentals/${leaf.id}`, {
-        headers: { Authorization: `Bearer ${loginForItem.access_token}` },
-      })
-
-      const { rental, activePackLists, archivedPackLists } = response.data
-      let available = rental.stockLevel
-
-      if (startDate && endDate) {
-        const allPackLists = [...activePackLists, ...archivedPackLists]
-        allPackLists.forEach((pl) => {
-          if (pl.startDate <= endDate && pl.endDate >= startDate) {
-            available -= pl.quantity
-          }
-        })
-      }
-
-      return { id: leaf.id, available }
-    }),
-  )
-
   const newAvailability = {}
-  results.forEach((result, index) => {
-    if (result.status === 'fulfilled' && result.value) {
-      newAvailability[result.value.id] = result.value.available
-    } else if (result.status === 'rejected') {
-      console.error(`Failed to fetch availability for rental ${leaves[index].id}`, result.reason)
-    }
-  })
 
-  inventoryAvailability.value = newAvailability
+  // Process in batches of 6 to stay within the browser's per-domain connection limit
+  const batchSize = 6
+  for (let i = 0; i < leaves.length; i += batchSize) {
+    const batch = leaves.slice(i, i + batchSize)
+    const results = await Promise.allSettled(
+      batch.map(async (leaf) => {
+        const loginForItem = loginStore.logins.find((l) => String(l.id) === String(leaf.userid))
+        if (!loginForItem?.access_token) return null
+
+        const response = await axios.get(`/api/rentals/${leaf.id}`, {
+          headers: { Authorization: `Bearer ${loginForItem.access_token}` },
+        })
+
+        const { rental, activePackLists, archivedPackLists } = response.data
+        const allPackLists = [...activePackLists, ...archivedPackLists]
+
+        const available =
+          startDate && endDate
+            ? computeMinAvailability(rental.stockLevel, allPackLists, startDate, endDate)
+            : rental.stockLevel
+
+        return { id: leaf.id, available }
+      }),
+    )
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        newAvailability[result.value.id] = result.value.available
+      } else if (result.status === 'rejected') {
+        console.error(
+          `Failed to fetch availability for rental ${batch[index].id}`,
+          result.reason,
+        )
+      }
+    })
+
+    // Make availability visible progressively as each batch completes
+    inventoryAvailability.value = { ...newAvailability }
+  }
+
   loadingAvailability.value = false
 }
 
@@ -682,9 +712,16 @@ watch(tickedRentals, (newVal) => {
   console.log('tickedRentals changed:', newVal)
 })
 
-// Fetch availability when the add rentals dialog opens
+// Fetch availability when the add rentals dialog opens.
+// Also watch inventory: if items load after the dialog is already open, fetch availability then.
 watch(showAddItemDialog, async (isOpen) => {
   if (isOpen) {
+    await fetchInventoryAvailability()
+  }
+})
+
+watch(inventory, async () => {
+  if (showAddItemDialog.value) {
     await fetchInventoryAvailability()
   }
 })
