@@ -928,19 +928,42 @@ const fetchAvailabilityForLeaves = async (leaves, apiPath, startDate, endDate) =
       batch.map(async (leaf) => {
         const loginForItem = loginStore.logins.find((l) => String(l.id) === String(leaf.userid))
         if (!loginForItem?.access_token) return null
-        const response = await axios.get(`${apiPath}/${leaf.id}`, {
-          headers: { Authorization: `Bearer ${loginForItem.access_token}` },
-        })
-        const item = response.data.rental || response.data.consumable
-        const allPackLists = [
-          ...(response.data.activePackLists || []),
-          ...(response.data.archivedPackLists || []),
-        ]
-        const available =
-          startDate && endDate
-            ? computeMinAvailability(item.stockLevel, allPackLists, startDate, endDate)
-            : item.stockLevel
-        return { id: leaf.id, available }
+
+        const tryFetch = async (path) => {
+          const response = await axios.get(`${path}/${leaf.id}`, {
+            headers: { Authorization: `Bearer ${loginForItem.access_token}` },
+          })
+          const item = response.data.rental || response.data.consumable
+          if (!item || item.stockLevel == null) return null
+          const allPackLists = [
+            ...(response.data.activePackLists || []),
+            ...(response.data.archivedPackLists || []),
+          ]
+          const available =
+            startDate && endDate
+              ? computeMinAvailability(item.stockLevel, allPackLists, startDate, endDate)
+              : item.stockLevel
+          return { id: leaf.id, available }
+        }
+
+        // Try the primary endpoint first; fall back to /api/rentals if it fails or
+        // returns no recognisable item (consumable IDs may share the rental ID space)
+        try {
+          const result = await tryFetch(apiPath)
+          if (result) return result
+        } catch {
+          // primary endpoint failed – fall through to fallback
+        }
+
+        if (apiPath !== '/api/rentals') {
+          try {
+            return await tryFetch('/api/rentals')
+          } catch {
+            return null
+          }
+        }
+
+        return null
       }),
     )
     results.forEach((result, index) => {
@@ -1167,12 +1190,32 @@ const addExtra = async () => {
       })
     } else {
       const consumableLogin = loginStore.logins.find((l) => String(l.id) === String(item.userid))
-      const response = await axios.get(`/api/consumables/${item.id}`, {
-        headers: { Authorization: `Bearer ${consumableLogin.access_token}` },
-      })
-      payload.dailyRate = response.data.consumable.dailyRate
+      let itemDetails = null
+      try {
+        const response = await axios.get(`/api/consumables/${item.id}`, {
+          headers: { Authorization: `Bearer ${consumableLogin.access_token}` },
+        })
+        itemDetails = response.data.consumable || response.data.rental
+      } catch {
+        // fall back to rentals endpoint if consumables/{id} doesn't exist
+      }
+      if (!itemDetails) {
+        try {
+          const response = await axios.get(`/api/rentals/${item.id}`, {
+            headers: { Authorization: `Bearer ${consumableLogin.access_token}` },
+          })
+          itemDetails = response.data.rental || response.data.consumable
+        } catch {
+          console.error(`Failed to fetch details for consumable ${item.id}`)
+        }
+      }
+      if (!itemDetails) {
+        $q.notify({ message: `Could not fetch details for ${item.name}`, color: 'red' })
+        continue
+      }
+      payload.dailyRate = itemDetails.dailyRate
       payload.name = item.name
-      payload.weight = response.data.consumable.weight
+      payload.weight = itemDetails.weight
       payload.rentedUnits = 0
       await axios.post('/api/pack-list-subrentals', payload, {
         headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
