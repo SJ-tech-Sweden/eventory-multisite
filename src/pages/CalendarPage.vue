@@ -65,7 +65,7 @@
                 <q-btn
                   color="primary"
                   label="Open"
-                  @click="navigateToPackList(packList.id, event.userid)"
+                  @click="navigateToPackList(packList.id, event.userid, event.startDate, event.endDate)"
                 />
               </q-item-section>
             </q-item>
@@ -222,8 +222,8 @@ onMounted(async () => {
 })
 
 // Function to navigate to the pack list page
-function navigateToPackList(packListId, userid) {
-  router.push(`/packlist/${packListId}/${userid}`)
+function navigateToPackList(packListId, userid, startDate, endDate) {
+  router.push({ path: `/packlist/${packListId}/${userid}`, query: { startDate, endDate } })
 }
 </script>
 

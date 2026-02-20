@@ -38,6 +38,12 @@
                   </template>
                 </q-input>
                 <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
+                <div v-if="loadingAvailability" class="q-mt-sm text-caption text-grey-7">
+                  <q-spinner size="xs" />
+                  Loading availability<template v-if="jobStartDate && jobEndDate"
+                    > for {{ jobStartDate }} – {{ jobEndDate }}</template
+                  >...
+                </div>
                 <div class="tree-container">
                   <!-- Tree view for inventory items -->
                   <q-tree
@@ -55,6 +61,21 @@
                       <q-item>
                         <q-item-section>
                           {{ scope.node.name }} - {{ scope.node.organisation }}
+                          <q-badge
+                            v-if="
+                              scope.node.tickable &&
+                              inventoryAvailability[scope.node.id] !== undefined
+                            "
+                            :color="
+                              inventoryAvailability[scope.node.id] > 0
+                                ? 'green'
+                                : inventoryAvailability[scope.node.id] === 0
+                                  ? 'orange'
+                                  : 'red'
+                            "
+                            :label="`Available: ${inventoryAvailability[scope.node.id]}`"
+                            class="q-ml-sm"
+                          />
                         </q-item-section>
                         <q-item-section>
                           <q-input
@@ -281,6 +302,8 @@ const packlist = ref(null)
 const expandedKeys = ref({})
 const showAddItemDialog = ref(false)
 const login = ref(null)
+const jobStartDate = ref(null)
+const jobEndDate = ref(null)
 
 // Adding rentals popup
 const inventory = ref([])
@@ -290,6 +313,8 @@ const inventoryTree = ref(null)
 const isExpanded = ref(false)
 const expandedKeysInventory = ref([])
 const tickedRentals = ref([])
+const inventoryAvailability = ref({})
+const loadingAvailability = ref(false)
 
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
@@ -329,6 +354,10 @@ const fetchPacklist = async () => {
     return
   }
 
+  // Prefer dates passed via route query (from navigation), fall back to API response
+  jobStartDate.value = route.query.startDate || null
+  jobEndDate.value = route.query.endDate || null
+
   try {
     const response = await axios.get(`/api/pack-lists/details/${packlistId}`, {
       headers: {
@@ -343,6 +372,10 @@ const fetchPacklist = async () => {
       internalSubrentalsTree: transformData(response.data.internalSubrentalsTree),
       externalSubrentals: transformData(response.data.externalSubrentals),
     }
+    // Use API dates if route query didn't provide them
+    if (!jobStartDate.value) jobStartDate.value = response.data.startDate || null
+    if (!jobEndDate.value) jobEndDate.value = response.data.endDate || null
+
     // Expand all rows by default
     expandedKeys.value = getAllKeys(packlist.value.rentalsTree)
     expandedKeys.value = { ...expandedKeys.value, ...getAllKeys(packlist.value.consumablesTree) }
@@ -417,6 +450,98 @@ const fetchInventory = async () => {
       }
     }
   }
+}
+
+// Get all leaf nodes (items without children) from a tree
+const getLeafNodes = (nodes) => {
+  const leaves = []
+  for (const node of nodes) {
+    if (!node.children || node.children.length === 0) {
+      leaves.push(node)
+    } else {
+      leaves.push(...getLeafNodes(node.children))
+    }
+  }
+  return leaves
+}
+
+// Compute the minimum available quantity across every day in [startDate, endDate]
+// using the same day-by-day logic as the calendar in inventoryDetail.vue
+const computeMinAvailability = (stockLevel, allPackLists, startDate, endDate) => {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  let minAvailable = stockLevel
+
+  for (let d = new Date(start); d <= end; d = new Date(d.setDate(d.getDate() + 1))) {
+    const dateStr = d.toISOString().slice(0, 10)
+    let available = stockLevel
+    allPackLists.forEach((pl) => {
+      if (dateStr >= pl.startDate && dateStr <= pl.endDate) {
+        available -= pl.quantity
+      }
+    })
+    if (available < minAvailable) {
+      minAvailable = available
+    }
+  }
+
+  return minAvailable
+}
+
+// Fetch availability for all inventory leaf nodes at the packlist dates
+const fetchInventoryAvailability = async () => {
+  if (!packlist.value || !inventory.value.length) return
+
+  const startDate = jobStartDate.value
+  const endDate = jobEndDate.value
+
+  loadingAvailability.value = true
+  inventoryAvailability.value = {}
+
+  const leaves = getLeafNodes(inventory.value)
+  const newAvailability = {}
+
+  // Process in batches of 6 to stay within the browser's per-domain connection limit
+  const batchSize = 6
+  for (let i = 0; i < leaves.length; i += batchSize) {
+    const batch = leaves.slice(i, i + batchSize)
+    const results = await Promise.allSettled(
+      batch.map(async (leaf) => {
+        const loginForItem = loginStore.logins.find((l) => String(l.id) === String(leaf.userid))
+        if (!loginForItem?.access_token) return null
+
+        const response = await axios.get(`/api/rentals/${leaf.id}`, {
+          headers: { Authorization: `Bearer ${loginForItem.access_token}` },
+        })
+
+        const { rental, activePackLists, archivedPackLists } = response.data
+        const allPackLists = [...(activePackLists || []), ...(archivedPackLists || [])]
+
+        const available =
+          startDate && endDate
+            ? computeMinAvailability(rental.stockLevel, allPackLists, startDate, endDate)
+            : rental.stockLevel
+
+        return { id: leaf.id, available }
+      }),
+    )
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        newAvailability[result.value.id] = result.value.available
+      } else if (result.status === 'rejected') {
+        console.error(
+          `Failed to fetch availability for rental ${batch[index].id}`,
+          result.reason,
+        )
+      }
+    })
+
+    // Make availability visible progressively as each batch completes
+    inventoryAvailability.value = { ...newAvailability }
+  }
+
+  loadingAvailability.value = false
 }
 
 // Add selected rentals to packlist
@@ -598,6 +723,20 @@ onMounted(() => {
 // Watch for changes in tickedRentals
 watch(tickedRentals, (newVal) => {
   console.log('tickedRentals changed:', newVal)
+})
+
+// Fetch availability when the add rentals dialog opens.
+// Also watch inventory: if items load after the dialog is already open, fetch availability then.
+watch(showAddItemDialog, async (isOpen) => {
+  if (isOpen) {
+    await fetchInventoryAvailability()
+  }
+})
+
+watch(inventory, async () => {
+  if (showAddItemDialog.value) {
+    await fetchInventoryAvailability()
+  }
 })
 
 // Attach rentalLogin info to inventory items

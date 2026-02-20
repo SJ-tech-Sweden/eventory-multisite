@@ -93,7 +93,7 @@
             </div>
           </q-card-section>
           <q-card-actions>
-            <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId)" />
+            <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId, packList.startDate, packList.endDate)" />
           </q-card-actions>
         </q-card>
       </q-card-section>
@@ -122,7 +122,7 @@
             </div>
           </q-card-section>
           <q-card-actions>
-            <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId)" />
+            <q-btn label="View Pack List" @click="navigateToPackList(packList.packListId, packList.startDate, packList.endDate)" />
           </q-card-actions>
         </q-card>
       </q-card-section>
@@ -303,9 +303,9 @@ function getIcon(status) {
 }
 
 // Function to navigate to the pack list
-const navigateToPackList = (packListId) => {
+const navigateToPackList = (packListId, startDate, endDate) => {
   const userId = route.params.userid
-  router.push(`/packlist/${packListId}/${userId}`)
+  router.push({ path: `/packlist/${packListId}/${userId}`, query: { startDate, endDate } })
 }
 
 // Fetcching the inventory item on mounted
