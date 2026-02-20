@@ -3,33 +3,47 @@
     <q-card>
       <q-card-section>
         <div class="text-h6">Check Out Equipment</div>
-        <q-btn icon="event" round color="primary">
-          <q-popup-proxy
-            @before-show="selectedDate"
-            cover
-            transition-show="scale"
-            transition-hide="scale"
-          >
-            <q-date
-              v-model="selectedDate"
-              range
-              @update:model-value="filterJobsByDateRange"
-              mask="YYYY-MM-DD"
-              :events="dateJobs"
-              first-day-of-week="1"
-              :event-color="getJobColor"
-              today-btn
-              :landscape="$q.screen.gt.xs"
+        <div class="row items-center q-gutter-sm q-mt-sm">
+          <q-btn icon="event" round color="primary">
+            <q-popup-proxy
+              @before-show="selectedDate"
+              cover
+              transition-show="scale"
+              transition-hide="scale"
             >
-              <div class="row items-center justify-end q-gutter-sm">
-                <q-btn label="OK" color="primary" flat v-close-popup />
-              </div>
-            </q-date>
-          </q-popup-proxy>
-        </q-btn>
+              <q-date
+                v-model="selectedDate"
+                range
+                @update:model-value="filterJobsByDateRange"
+                mask="YYYY-MM-DD"
+                :events="dateJobs"
+                first-day-of-week="1"
+                :event-color="getJobColor"
+                today-btn
+                :landscape="$q.screen.gt.xs"
+              >
+                <div class="row items-center justify-end q-gutter-sm">
+                  <q-btn label="OK" color="primary" flat v-close-popup />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-btn>
+          <q-select
+            v-model="sortBy"
+            :options="sortOptions"
+            option-value="value"
+            option-label="label"
+            emit-value
+            map-options
+            label="Sort by"
+            dense
+            outlined
+            style="min-width: 150px"
+          />
+        </div>
       </q-card-section>
       <q-card-section>
-        <q-card v-for="packlist in packlists" :key="packlist.id" class="nested-card">
+        <q-card v-for="packlist in sortedPacklists" :key="packlist.id" class="nested-card">
           <q-card-section class="relative-position">
             <q-avatar class="responsive-avatar" size="100px">
               <q-img :src="packlist.organisationLogo"></q-img>
@@ -92,6 +106,8 @@
                 <q-card class="nested-card">
                   <q-card-section>
                     <div class="text-subtitle">{{ props.row.name }}</div>
+                    <div v-if="props.row.category" class="text-caption">Category: {{ props.row.category }}</div>
+                    <div v-if="props.row.description" class="text-caption">{{ props.row.description }}</div>
                   </q-card-section>
                   <q-card-section>
                     <div class="text-caption">Quantity: {{ props.row.quantity }}</div>
@@ -163,6 +179,8 @@
                 <q-card class="nested-card">
                   <q-card-section>
                     <div class="text-subtitle">{{ props.row.name }}</div>
+                    <div v-if="props.row.category" class="text-caption">Category: {{ props.row.category }}</div>
+                    <div v-if="props.row.description" class="text-caption">{{ props.row.description }}</div>
                   </q-card-section>
                   <q-card-section>
                     <div class="text-caption">Quantity: {{ props.row.quantity }}</div>
@@ -257,6 +275,8 @@
                 <q-card class="nested-card">
                   <q-card-section>
                     <div class="text-subtitle">{{ props.row.name }}</div>
+                    <div v-if="props.row.category" class="text-caption">Category: {{ props.row.category }}</div>
+                    <div v-if="props.row.description" class="text-caption">{{ props.row.description }}</div>
                   </q-card-section>
                   <q-card-section>
                     <div class="text-caption">Quantity: {{ props.row.quantity }}</div>
@@ -477,7 +497,7 @@
 
 <script setup>
 // Import necessary modules and components
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -512,12 +532,21 @@ const selectedDate = ref({
 const filteredJobs = ref([])
 const packlists = ref([])
 
+const sortOptions = [
+  { label: 'Name', value: 'name' },
+  { label: 'Category', value: 'category' },
+  { label: 'Description', value: 'description' },
+]
+const sortBy = ref(localStorage.getItem('checkoutSortBy') || 'name')
+watch(sortBy, (val) => localStorage.setItem('checkoutSortBy', val))
+
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
 loginStore.startTokenRefresh()
 
 // Define columns for the tables
 const rentalColumns = [
+  { name: 'category', align: 'left', label: 'Category', field: 'category', sortable: true },
   {
     name: 'name',
     required: true,
@@ -527,12 +556,14 @@ const rentalColumns = [
     format: (val) => `${val}`,
     sortable: true,
   },
+  { name: 'description', align: 'left', label: 'Description', field: 'description', sortable: true },
   { name: 'quantity', align: 'center', label: 'Quantity', field: 'quantity', sortable: true },
   { name: 'checkout', align: 'center', label: 'Check out', field: 'checkout', sortable: false },
   { name: 'out', align: 'center', label: 'Out', field: 'out', sortable: true },
 ]
 
 const consumableColumns = [
+  { name: 'category', align: 'left', label: 'Category', field: 'category', sortable: true },
   {
     name: 'name',
     required: true,
@@ -542,12 +573,14 @@ const consumableColumns = [
     format: (val) => `${val}`,
     sortable: true,
   },
+  { name: 'description', align: 'left', label: 'Description', field: 'description', sortable: true },
   { name: 'quantity', align: 'center', label: 'Quantity', field: 'quantity', sortable: true },
   { name: 'checkout', align: 'center', label: 'Check out', field: 'checkout', sortable: false },
   { name: 'out', align: 'right', label: 'Out', field: 'out', sortable: true },
 ]
 
 const subrentalColumns = [
+  { name: 'category', align: 'left', label: 'Category', field: 'category', sortable: true },
   {
     name: 'name',
     required: true,
@@ -557,6 +590,7 @@ const subrentalColumns = [
     format: (val) => `${val}`,
     sortable: true,
   },
+  { name: 'description', align: 'left', label: 'Description', field: 'description', sortable: true },
   { name: 'quantity', align: 'center', label: 'Quantity', field: 'quantity', sortable: true },
   { name: 'out', align: 'center', label: 'Out', field: 'out', sortable: true },
   { name: 'checkout', align: 'center', label: 'Check out', field: 'checkout', sortable: false },
@@ -668,36 +702,48 @@ const fetchPacklistDetailsForFilteredJobs = async () => {
       // Map rentals, consumables, and subrentals to include names from their respective trees
       packlistData.mappedRentals =
         packlistData.rentals?.map((rental) => {
-          const rentalItem = findItemInTree(packlistData.rentalsTree || [], rental.id)
-          return { ...rental, name: rentalItem ? rentalItem.name : '', checkout: rental.quantity }
+          const result = findItemWithCategory(packlistData.rentalsTree || [], rental.id)
+          return {
+            ...rental,
+            name: result?.item?.name || '',
+            category: result?.category || '',
+            description: result?.item?.description || '',
+            checkout: rental.quantity,
+          }
         }) || []
 
       packlistData.mappedConsumables =
         packlistData.consumables?.map((consumable) => {
-          const consumableItem = findItemInTree(packlistData.consumablesTree || [], consumable.id)
+          const result = findItemWithCategory(packlistData.consumablesTree || [], consumable.id)
           return {
             ...consumable,
-            name: consumableItem ? consumableItem.name : '',
+            name: result?.item?.name || '',
+            category: result?.category || '',
+            description: result?.item?.description || '',
             checkout: consumable.quantity,
           }
         }) || []
 
       packlistData.mappedSubrentals =
         packlistData.subrentals?.map((subrental) => {
-          const internalItem = findItemInTree(
+          const internalResult = findItemWithCategory(
             packlistData.internalSubrentalsTree || [],
             subrental.id,
           )
           const externalItem = packlistData.externalSubrentals?.find(
             (item) => item.id === subrental.id,
           )
-          const subrentalItem = internalItem || externalItem
+          const subrentalItem = internalResult?.item || externalItem
           const name = subrentalItem ? subrentalItem.name : ''
+          const category = internalResult?.category || ''
+          const description = subrentalItem?.description || ''
           const supplier = subrentalItem ? subrentalItem.supplier : ''
           const rentedUnits = subrentalItem ? subrentalItem.rentedUnits : ''
           return {
             ...subrental,
             name,
+            category,
+            description,
             supplier,
             rentedUnits,
             checkout: subrental.quantity,
@@ -715,24 +761,33 @@ const fetchPacklistDetailsForFilteredJobs = async () => {
   packlists.value.sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
 }
 
-// Helper function to find an item in a tree by ID
-const findItemInTree = (tree, id) => {
-  if (!Array.isArray(tree)) {
-    return null
-  }
+// Helper function to find an item in a tree by ID, also returning its parent category name
+const findItemWithCategory = (tree, id, parentName = '') => {
+  if (!Array.isArray(tree)) return null
   for (const node of tree) {
-    if (node.id === id) {
-      return node
-    }
+    if (node.id === id) return { item: node, category: parentName }
     if (node.children) {
-      const found = findItemInTree(node.children, id)
-      if (found) {
-        return found
-      }
+      const found = findItemWithCategory(node.children, id, node.name || parentName)
+      if (found) return found
     }
   }
   return null
 }
+
+// Sort helper and sorted packlists computed
+const sortItems = (items, field) =>
+  [...items].sort((a, b) =>
+    (a[field] || '').toLowerCase().localeCompare((b[field] || '').toLowerCase()),
+  )
+
+const sortedPacklists = computed(() =>
+  packlists.value.map((pl) => ({
+    ...pl,
+    mappedRentals: sortItems(pl.mappedRentals, sortBy.value),
+    mappedConsumables: sortItems(pl.mappedConsumables, sortBy.value),
+    mappedSubrentals: sortItems(pl.mappedSubrentals, sortBy.value),
+  })),
+)
 
 // Function to handle check-in action
 const checkOutItem = async (item, type, login) => {
