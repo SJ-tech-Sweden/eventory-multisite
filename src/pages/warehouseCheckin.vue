@@ -6,7 +6,7 @@
         <div class="text-h6">Check In Equipment</div>
         <!-- Content for checking in equipment -->
         <q-card v-for="packlist in packlists" :key="packlist.id" class="nested-card">
-          <q-card-section>
+          <q-card-section class="relative-position">
             <q-avatar class="responsive-avatar" size="100px">
               <q-img :src="packlist.organisationLogo"></q-img>
             </q-avatar>

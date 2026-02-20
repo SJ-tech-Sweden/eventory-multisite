@@ -60,9 +60,11 @@
               ></div>
             </q-item-section>
             <q-item-section side>
-              <q-btn icon="edit" flat color="primary" @click="openEditDialog(login)" />
-              <q-btn flat icon="refresh" @click.stop="setActiveLogin(login.id)" />
-              <q-btn flat icon="delete" color="negative" @click.stop="removeLogin(login.id)" />
+              <div class="row no-wrap">
+                <q-btn icon="edit" flat color="primary" @click="openEditDialog(login)" />
+                <q-btn flat icon="refresh" @click.stop="setActiveLogin(login.id)" />
+                <q-btn flat icon="delete" color="negative" @click.stop="removeLogin(login.id)" />
+              </div>
             </q-item-section>
           </q-item>
         </q-list>
@@ -199,7 +201,7 @@ const logins = loginStore.logins
 
 <style scoped>
 .q-card {
-  max-width: 400px;
+  max-width: 600px;
   margin: 0 auto 20px auto;
 }
 
