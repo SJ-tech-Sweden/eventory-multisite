@@ -57,6 +57,9 @@
                         <q-item-section>
                           {{ scope.node.name }} - {{ scope.node.organisation }}
                         </q-item-section>
+                        <q-item-section v-if="!scope.node.children" side>
+                          <q-badge color="teal" :label="`Stock: ${scope.node.stockLevel ?? 'N/A'}`" />
+                        </q-item-section>
                         <q-item-section>
                           <q-input
                             v-if="!scope.node.children"
@@ -135,6 +138,9 @@
                       <q-item>
                         <q-item-section>
                           {{ scope.node.name }} - {{ scope.node.organisation }}
+                        </q-item-section>
+                        <q-item-section v-if="!scope.node.children" side>
+                          <q-badge color="teal" :label="`Stock: ${scope.node.stockLevel ?? 'N/A'}`" />
                         </q-item-section>
                         <q-item-section>
                           <q-input
