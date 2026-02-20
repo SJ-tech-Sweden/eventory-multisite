@@ -48,6 +48,11 @@
               label="View Pack List"
               @click="navigateToPackList(packlist.id, packlist.login.id)"
             />
+            <q-btn
+              color="secondary"
+              label="Add Extra"
+              @click="openAddExtraDialog(packlist)"
+            />
           </q-card-actions>
           <q-card-section>
             <div class="text-h6">Rentals</div>
@@ -311,6 +316,79 @@
         </q-card>
       </q-card-section>
     </q-card>
+
+    <!-- Dialog for adding extra items to a packlist -->
+    <q-dialog v-model="showAddExtraDialog" full-width>
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Add extras to Packlist</div>
+          <q-input ref="filterRef" filled v-model="filter" label="Filter">
+            <template v-slot:append>
+              <q-icon
+                v-if="filter !== ''"
+                name="clear"
+                class="cursor-pointer"
+                @click="resetFilter"
+              />
+            </template>
+          </q-input>
+          <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
+          <div class="tree-container">
+            <q-tree
+              :nodes="filteredInventoryWithTickable"
+              node-key="id"
+              :filter-method="filterMethod"
+              ref="inventoryTree"
+              v-model:expanded="expandedKeysInventory"
+              @update:expanded="handleExpandedKeys"
+              v-model:ticked="tickedRentals"
+              tick-strategy="none"
+              full-width
+            >
+              <template v-slot:default-header="scope">
+                <q-item>
+                  <q-item-section>
+                    {{ scope.node.name }} - {{ scope.node.organisation }}
+                  </q-item-section>
+                  <q-item-section>
+                    <q-input
+                      v-if="!scope.node.children"
+                      v-model="scope.node.quantity"
+                      type="number"
+                      min="0"
+                    />
+                  </q-item-section>
+                  <q-item-section v-if="scope.node.tickable" side>
+                    <q-checkbox
+                      :model-value="tickedRentals.includes(scope.node.id)"
+                      @update:model-value="
+                        (val) => {
+                          if (val) {
+                            if (!tickedRentals.includes(scope.node.id)) {
+                              tickedRentals.push(scope.node.id)
+                            }
+                          } else {
+                            const idx = tickedRentals.indexOf(scope.node.id)
+                            if (idx !== -1) {
+                              tickedRentals.splice(idx, 1)
+                            }
+                          }
+                        }
+                      "
+                      @click.stop
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-tree>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Add extras" color="primary" @click="addExtra()" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -653,6 +731,182 @@ const navigateToPackList = (packlistId, userId) => {
   router.push(`/packlist/${packlistId}/${userId}`)
 }
 
+// Add Extra dialog state
+const showAddExtraDialog = ref(false)
+const currentPacklist = ref(null)
+const inventory = ref([])
+const filter = ref('')
+const filterRef = ref(null)
+const inventoryTree = ref(null)
+const isExpanded = ref(false)
+const expandedKeysInventory = ref([])
+const tickedRentals = ref([])
+
+const addPropertiesToTree = (nodes, properties) => {
+  return nodes.map((node) => {
+    const updatedNode = { ...node, ...properties }
+    if (node.children) {
+      updatedNode.children = addPropertiesToTree(node.children, properties)
+    }
+    return updatedNode
+  })
+}
+
+const fetchInventory = async () => {
+  inventory.value = []
+  for (const login of loginStore.logins) {
+    if (login.access_token) {
+      try {
+        const response = await axios.get('/api/inventory-rentals', {
+          headers: { Authorization: `Bearer ${login.access_token}` },
+        })
+        const properties = {
+          organisation: login.organisation,
+          organisationLogo: login.organisationLogo,
+          userid: login.id,
+        }
+        inventory.value.push(...addPropertiesToTree(response.data, properties))
+      } catch (error) {
+        console.error(`Failed to fetch inventory for ${login.username}:`, error)
+      }
+    }
+  }
+}
+
+const openAddExtraDialog = async (packlist) => {
+  currentPacklist.value = packlist
+  tickedRentals.value = []
+  filter.value = ''
+  await fetchInventory()
+  showAddExtraDialog.value = true
+}
+
+function findNodeById(nodes, id) {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    if (node.children) {
+      const found = findNodeById(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+const resetFilter = () => {
+  filter.value = ''
+  filterRef.value.focus()
+}
+
+const filterMethod = (node, filter) => {
+  return node.name && node.name.toLowerCase().includes(filter.toLowerCase())
+}
+
+const filterNodes = (nodes, filter) => {
+  return nodes
+    .map((node) => {
+      if (filterMethod(node, filter)) return node
+      if (node.children) {
+        const filteredChildren = filterNodes(node.children, filter)
+        if (filteredChildren.length) return { ...node, children: filteredChildren }
+      }
+      return null
+    })
+    .filter((node) => node !== null)
+}
+
+const toggleExpandAll = () => {
+  if (!isExpanded.value) {
+    inventoryTree.value?.expandAll()
+  } else {
+    inventoryTree.value?.collapseAll()
+  }
+}
+
+const expandAllLabel = computed(() => (isExpanded.value ? 'Collapse All' : 'Expand All'))
+
+const handleExpandedKeys = () => {
+  isExpanded.value = expandedKeysInventory.value.length > 0
+}
+
+function markTickable(nodes) {
+  return nodes.map((node) => {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0
+    return {
+      ...node,
+      tickable: !hasChildren,
+      quantity: !hasChildren
+        ? typeof node.quantity === 'number'
+          ? node.quantity
+          : 1
+        : undefined,
+      children: hasChildren ? markTickable(node.children) : undefined,
+    }
+  })
+}
+
+const filteredInventory = computed(() => {
+  if (!filter.value) return inventory.value
+  return filterNodes(inventory.value, filter.value)
+})
+
+const filteredInventoryWithTickable = computed(() => markTickable(filteredInventory.value))
+
+const addExtra = async () => {
+  if (!currentPacklist.value) return
+  const packlistLogin = currentPacklist.value.login
+  const packlistId = currentPacklist.value.id
+  const itemsToAdd = tickedRentals.value
+    .map((id) => {
+      const node = findNodeById(filteredInventoryWithTickable.value, id)
+      return node
+        ? {
+            id: node.id,
+            name: node.name,
+            quantity: node.quantity,
+            userid: node.userid,
+            supplier: node.supplier,
+          }
+        : null
+    })
+    .filter(Boolean)
+
+  for (const item of itemsToAdd) {
+    const payload = {
+      packList_id: packlistId,
+      quantity: item.quantity,
+      discountMultiplier: 1,
+      out: 0,
+      note: '',
+    }
+    if (item.userid === packlistLogin.id) {
+      payload.rental_id = item.id
+      await axios.post('/api/pack-list-rentals', payload, {
+        headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
+      })
+    } else {
+      const rentalLogin = loginStore.logins.find((l) => String(l.id) === String(item.userid))
+      const response = await axios.get(`/api/rentals/${item.id}`, {
+        headers: { Authorization: `Bearer ${rentalLogin.access_token}` },
+      })
+      payload.dailyRate = response.data.rental.dailyRate
+      payload.name = item.name
+      payload.weight = response.data.rental.weight
+      payload.supplier = item.supplier
+      payload.rentedUnits = 0
+      await axios.post('/api/pack-list-subrentals', payload, {
+        headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
+      })
+    }
+  }
+
+  showAddExtraDialog.value = false
+  $q.notify({
+    message: `${itemsToAdd.length} extra(s) added to ${currentPacklist.value.name}.`,
+    color: 'green',
+  })
+  fetchPacklistDetailsForFilteredJobs()
+}
+
 onMounted(() => {
   fetchJobs()
 })
@@ -680,5 +934,10 @@ onMounted(() => {
     bottom: 20px;
     right: 20px;
   }
+}
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 </style>
