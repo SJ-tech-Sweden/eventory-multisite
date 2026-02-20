@@ -38,6 +38,9 @@
                   </template>
                 </q-input>
                 <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
+                <div v-if="loadingAvailability" class="q-mt-sm text-caption text-grey-7">
+                  <q-spinner size="xs" /> Loading availability...
+                </div>
                 <div class="tree-container">
                   <!-- Tree view for inventory items -->
                   <q-tree
@@ -55,6 +58,21 @@
                       <q-item>
                         <q-item-section>
                           {{ scope.node.name }} - {{ scope.node.organisation }}
+                          <q-badge
+                            v-if="
+                              scope.node.tickable &&
+                              inventoryAvailability[scope.node.id] !== undefined
+                            "
+                            :color="
+                              inventoryAvailability[scope.node.id] > 0
+                                ? 'green'
+                                : inventoryAvailability[scope.node.id] === 0
+                                  ? 'orange'
+                                  : 'red'
+                            "
+                            :label="`Available: ${inventoryAvailability[scope.node.id]}`"
+                            class="q-ml-sm"
+                          />
                         </q-item-section>
                         <q-item-section>
                           <q-input
@@ -290,6 +308,8 @@ const inventoryTree = ref(null)
 const isExpanded = ref(false)
 const expandedKeysInventory = ref([])
 const tickedRentals = ref([])
+const inventoryAvailability = ref({})
+const loadingAvailability = ref(false)
 
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
@@ -417,6 +437,68 @@ const fetchInventory = async () => {
       }
     }
   }
+}
+
+// Get all leaf nodes (items without children) from a tree
+const getLeafNodes = (nodes) => {
+  const leaves = []
+  for (const node of nodes) {
+    if (!node.children || node.children.length === 0) {
+      leaves.push(node)
+    } else {
+      leaves.push(...getLeafNodes(node.children))
+    }
+  }
+  return leaves
+}
+
+// Fetch availability for all inventory leaf nodes at the packlist dates
+const fetchInventoryAvailability = async () => {
+  if (!packlist.value || !inventory.value.length) return
+
+  const startDate = packlist.value.startDate
+  const endDate = packlist.value.endDate
+
+  loadingAvailability.value = true
+
+  const leaves = getLeafNodes(inventory.value)
+
+  const results = await Promise.allSettled(
+    leaves.map(async (leaf) => {
+      const loginForItem = loginStore.logins.find((l) => String(l.id) === String(leaf.userid))
+      if (!loginForItem?.access_token) return null
+
+      const response = await axios.get(`/api/rentals/${leaf.id}`, {
+        headers: { Authorization: `Bearer ${loginForItem.access_token}` },
+      })
+
+      const { rental, activePackLists, archivedPackLists } = response.data
+      let available = rental.stockLevel
+
+      if (startDate && endDate) {
+        const allPackLists = [...activePackLists, ...archivedPackLists]
+        allPackLists.forEach((pl) => {
+          if (pl.startDate <= endDate && pl.endDate >= startDate) {
+            available -= pl.quantity
+          }
+        })
+      }
+
+      return { id: leaf.id, available }
+    }),
+  )
+
+  const newAvailability = {}
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled' && result.value) {
+      newAvailability[result.value.id] = result.value.available
+    } else if (result.status === 'rejected') {
+      console.error(`Failed to fetch availability for rental ${leaves[index].id}`, result.reason)
+    }
+  })
+
+  inventoryAvailability.value = newAvailability
+  loadingAvailability.value = false
 }
 
 // Add selected rentals to packlist
@@ -598,6 +680,13 @@ onMounted(() => {
 // Watch for changes in tickedRentals
 watch(tickedRentals, (newVal) => {
   console.log('tickedRentals changed:', newVal)
+})
+
+// Fetch availability when the add rentals dialog opens
+watch(showAddItemDialog, async (isOpen) => {
+  if (isOpen) {
+    await fetchInventoryAvailability()
+  }
 })
 
 // Attach rentalLogin info to inventory items
