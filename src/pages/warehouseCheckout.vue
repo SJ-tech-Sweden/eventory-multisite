@@ -426,12 +426,9 @@
                     <q-item-section>
                       {{ scope.node.name }} - {{ scope.node.organisation }}
                       <q-badge
-                        v-if="
-                          scope.node.tickable &&
-                          inventoryAvailability[scope.node.id] !== undefined
-                        "
-                        :color="availabilityColor(inventoryAvailability[scope.node.id])"
-                        :label="`Available: ${inventoryAvailability[scope.node.id]}`"
+                        v-if="scope.node.tickable"
+                        color="teal"
+                        :label="`Stock: ${scope.node.stockLevel ?? 'N/A'}`"
                         class="q-ml-sm"
                       />
                     </q-item-section>
@@ -888,6 +885,38 @@ const fetchConsumables = async () => {
       }
     }
   }
+  await enrichConsumablesWithStock()
+}
+
+// Enrich leaf nodes with stockLevel by fetching /api/consumables/:id for each
+const enrichConsumablesWithStock = async () => {
+  const leafNodes = []
+  const collectLeaves = (nodes) => {
+    nodes.forEach((node) => {
+      if (node.children && node.children.length > 0) {
+        collectLeaves(node.children)
+      } else {
+        const leafLogin = loginStore.logins.find((l) => String(l.id) === String(node.userid))
+        if (leafLogin) leafNodes.push({ node, login: leafLogin })
+      }
+    })
+  }
+  collectLeaves(consumablesInventory.value)
+
+  await Promise.all(
+    leafNodes.map(async ({ node, login }) => {
+      try {
+        const response = await axios.get(`/api/consumables/${node.id}`, {
+          headers: { Authorization: `Bearer ${login.access_token}` },
+        })
+        // Handle both wrapped and flat response shapes
+        node.stockLevel =
+          response.data.consumable?.stockLevel ?? response.data.stockLevel ?? null
+      } catch (error) {
+        console.error(`Failed to fetch stock level for consumable ${node.id}:`, error)
+      }
+    }),
+  )
 }
 
 const getLeafNodes = (nodes) => {
