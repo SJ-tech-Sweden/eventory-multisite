@@ -39,7 +39,10 @@
                 </q-input>
                 <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mt-md" />
                 <div v-if="loadingAvailability" class="q-mt-sm text-caption text-grey-7">
-                  <q-spinner size="xs" /> Loading availability...
+                  <q-spinner size="xs" />
+                  Loading availability<template v-if="jobStartDate && jobEndDate"
+                    > for {{ jobStartDate }} – {{ jobEndDate }}</template
+                  >...
                 </div>
                 <div class="tree-container">
                   <!-- Tree view for inventory items -->
@@ -299,6 +302,8 @@ const packlist = ref(null)
 const expandedKeys = ref({})
 const showAddItemDialog = ref(false)
 const login = ref(null)
+const jobStartDate = ref(null)
+const jobEndDate = ref(null)
 
 // Adding rentals popup
 const inventory = ref([])
@@ -349,6 +354,10 @@ const fetchPacklist = async () => {
     return
   }
 
+  // Prefer dates passed via route query (from navigation), fall back to API response
+  jobStartDate.value = route.query.startDate || null
+  jobEndDate.value = route.query.endDate || null
+
   try {
     const response = await axios.get(`/api/pack-lists/details/${packlistId}`, {
       headers: {
@@ -363,6 +372,10 @@ const fetchPacklist = async () => {
       internalSubrentalsTree: transformData(response.data.internalSubrentalsTree),
       externalSubrentals: transformData(response.data.externalSubrentals),
     }
+    // Use API dates if route query didn't provide them
+    if (!jobStartDate.value) jobStartDate.value = response.data.startDate || null
+    if (!jobEndDate.value) jobEndDate.value = response.data.endDate || null
+
     // Expand all rows by default
     expandedKeys.value = getAllKeys(packlist.value.rentalsTree)
     expandedKeys.value = { ...expandedKeys.value, ...getAllKeys(packlist.value.consumablesTree) }
@@ -479,8 +492,8 @@ const computeMinAvailability = (stockLevel, allPackLists, startDate, endDate) =>
 const fetchInventoryAvailability = async () => {
   if (!packlist.value || !inventory.value.length) return
 
-  const startDate = packlist.value.startDate
-  const endDate = packlist.value.endDate
+  const startDate = jobStartDate.value
+  const endDate = jobEndDate.value
 
   loadingAvailability.value = true
   inventoryAvailability.value = {}
@@ -502,7 +515,7 @@ const fetchInventoryAvailability = async () => {
         })
 
         const { rental, activePackLists, archivedPackLists } = response.data
-        const allPackLists = [...activePackLists, ...archivedPackLists]
+        const allPackLists = [...(activePackLists || []), ...(archivedPackLists || [])]
 
         const available =
           startDate && endDate
