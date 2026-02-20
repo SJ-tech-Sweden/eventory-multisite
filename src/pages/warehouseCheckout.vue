@@ -48,6 +48,11 @@
               label="View Pack List"
               @click="navigateToPackList(packlist.id, packlist.login.id)"
             />
+            <q-btn
+              color="secondary"
+              label="Add Extra"
+              @click="openAddExtraDialog(packlist)"
+            />
           </q-card-actions>
           <q-card-section>
             <div class="text-h6">Rentals</div>
@@ -311,6 +316,162 @@
         </q-card>
       </q-card-section>
     </q-card>
+
+    <!-- Dialog for adding extra items to a packlist -->
+    <q-dialog v-model="showAddExtraDialog" full-width>
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Add extras to Packlist</div>
+          <q-input ref="filterRef" filled v-model="filter" label="Filter">
+            <template v-slot:append>
+              <q-icon
+                v-if="filter !== ''"
+                name="clear"
+                class="cursor-pointer"
+                @click="resetFilter"
+              />
+            </template>
+          </q-input>
+          <div v-if="loadingAvailability" class="q-mt-sm text-caption text-grey-7">
+            <q-spinner size="xs" />
+            Loading availability<template v-if="currentPacklist"
+              > for {{ currentPacklist.startDate }}
+              <template v-if="currentJobEndDate"> – {{ currentJobEndDate }}</template></template
+            >...
+          </div>
+        </q-card-section>
+        <q-tabs v-model="activeTab" dense align="left">
+          <q-tab name="rentals" label="Rentals" />
+          <q-tab name="consumables" label="Consumables" />
+        </q-tabs>
+        <q-separator />
+        <q-tab-panels v-model="activeTab" animated>
+          <q-tab-panel name="rentals">
+            <q-btn :label="expandAllLabel" @click="toggleExpandAll" class="q-mb-md" />
+            <div class="tree-container">
+              <q-tree
+                :nodes="filteredInventoryWithTickable"
+                node-key="id"
+                :filter-method="filterMethod"
+                ref="inventoryTree"
+                v-model:expanded="expandedKeysInventory"
+                @update:expanded="handleExpandedKeys"
+                v-model:ticked="tickedRentals"
+                tick-strategy="none"
+                full-width
+              >
+                <template v-slot:default-header="scope">
+                  <q-item>
+                    <q-item-section>
+                      {{ scope.node.name }} - {{ scope.node.organisation }}
+                      <q-badge
+                        v-if="
+                          scope.node.tickable &&
+                          inventoryAvailability[scope.node.id] !== undefined
+                        "
+                        :color="availabilityColor(inventoryAvailability[scope.node.id])"
+                        :label="`Available: ${inventoryAvailability[scope.node.id]}`"
+                        class="q-ml-sm"
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-input
+                        v-if="!scope.node.children"
+                        v-model="scope.node.quantity"
+                        type="number"
+                        min="0"
+                      />
+                    </q-item-section>
+                    <q-item-section v-if="scope.node.tickable" side>
+                      <q-checkbox
+                        :model-value="tickedRentals.includes(scope.node.id)"
+                        @update:model-value="
+                          (val) => {
+                            if (val) {
+                              if (!tickedRentals.includes(scope.node.id)) {
+                                tickedRentals.push(scope.node.id)
+                              }
+                            } else {
+                              const idx = tickedRentals.indexOf(scope.node.id)
+                              if (idx !== -1) {
+                                tickedRentals.splice(idx, 1)
+                              }
+                            }
+                          }
+                        "
+                        @click.stop
+                      />
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-tree>
+            </div>
+          </q-tab-panel>
+          <q-tab-panel name="consumables">
+            <q-btn :label="expandAllLabelConsumables" @click="toggleExpandAllConsumables" class="q-mb-md" />
+            <div class="tree-container">
+              <q-tree
+                :nodes="filteredConsumablesWithTickable"
+                node-key="id"
+                :filter-method="filterMethod"
+                ref="consumablesTree"
+                v-model:expanded="expandedKeysConsumables"
+                @update:expanded="handleExpandedKeysConsumables"
+                v-model:ticked="tickedConsumables"
+                tick-strategy="none"
+                full-width
+              >
+                <template v-slot:default-header="scope">
+                  <q-item>
+                    <q-item-section>
+                      {{ scope.node.name }} - {{ scope.node.organisation }}
+                      <q-badge
+                        v-if="scope.node.tickable"
+                        color="teal"
+                        :label="`Stock: ${scope.node.stockLevel ?? 'N/A'}`"
+                        class="q-ml-sm"
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-input
+                        v-if="!scope.node.children"
+                        v-model="scope.node.quantity"
+                        type="number"
+                        min="0"
+                      />
+                    </q-item-section>
+                    <q-item-section v-if="scope.node.tickable" side>
+                      <q-checkbox
+                        :model-value="tickedConsumables.includes(scope.node.id)"
+                        @update:model-value="
+                          (val) => {
+                            if (val) {
+                              if (!tickedConsumables.includes(scope.node.id)) {
+                                tickedConsumables.push(scope.node.id)
+                              }
+                            } else {
+                              const idx = tickedConsumables.indexOf(scope.node.id)
+                              if (idx !== -1) {
+                                tickedConsumables.splice(idx, 1)
+                              }
+                            }
+                          }
+                        "
+                        @click.stop
+                      />
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-tree>
+            </div>
+          </q-tab-panel>
+        </q-tab-panels>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn flat label="Add extras" color="primary" @click="addExtra()" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -499,6 +660,7 @@ const fetchPacklistDetailsForFilteredJobs = async () => {
       packlistData.jobName = job.name
       packlistData.jobStatus = job.status
       packlistData.startDate = job.startDate
+      packlistData.jobId = job.id
       packlistData.organisation = job.organisation
       packlistData.organisationLogo = job.organisationLogo
       packlistData.login = job.login // Add login information to packlist
@@ -653,6 +815,452 @@ const navigateToPackList = (packlistId, userId) => {
   router.push(`/packlist/${packlistId}/${userId}`)
 }
 
+// Add Extra dialog state
+const showAddExtraDialog = ref(false)
+const activeTab = ref('rentals')
+const currentPacklist = ref(null)
+const currentJobEndDate = ref(null)
+const inventory = ref([])
+const consumablesInventory = ref([])
+const filter = ref('')
+const filterRef = ref(null)
+const inventoryTree = ref(null)
+const consumablesTree = ref(null)
+const isExpanded = ref(false)
+const isExpandedConsumables = ref(false)
+const expandedKeysInventory = ref([])
+const expandedKeysConsumables = ref([])
+const tickedRentals = ref([])
+const tickedConsumables = ref([])
+const inventoryAvailability = ref({})
+const loadingAvailability = ref(false)
+
+const addPropertiesToTree = (nodes, properties) => {
+  return nodes.map((node) => {
+    const updatedNode = { ...node, ...properties }
+    if (node.children) {
+      updatedNode.children = addPropertiesToTree(node.children, properties)
+    }
+    return updatedNode
+  })
+}
+
+const fetchInventory = async () => {
+  inventory.value = []
+  for (const login of loginStore.logins) {
+    if (login.access_token) {
+      try {
+        const response = await axios.get('/api/inventory-rentals', {
+          headers: { Authorization: `Bearer ${login.access_token}` },
+        })
+        const properties = {
+          organisation: login.organisation,
+          organisationLogo: login.organisationLogo,
+          userid: login.id,
+        }
+        inventory.value.push(...addPropertiesToTree(response.data, properties))
+      } catch (error) {
+        console.error(`Failed to fetch inventory for ${login.username}:`, error)
+      }
+    }
+  }
+}
+
+const fetchConsumables = async () => {
+  consumablesInventory.value = []
+  for (const login of loginStore.logins) {
+    if (login.access_token) {
+      try {
+        const response = await axios.get('/api/inventory-consumables', {
+          headers: { Authorization: `Bearer ${login.access_token}` },
+        })
+        const properties = {
+          organisation: login.organisation,
+          organisationLogo: login.organisationLogo,
+          userid: login.id,
+        }
+        consumablesInventory.value.push(...addPropertiesToTree(response.data, properties))
+      } catch (error) {
+        console.error(`Failed to fetch consumables for ${login.username}:`, error)
+      }
+    }
+  }
+  await enrichConsumablesWithStock()
+}
+
+// Enrich leaf nodes with stockLevel by fetching /api/consumables/:id for each
+const enrichConsumablesWithStock = async () => {
+  const leafNodes = []
+  const collectLeaves = (nodes) => {
+    nodes.forEach((node) => {
+      if (node.children && node.children.length > 0) {
+        collectLeaves(node.children)
+      } else {
+        const leafLogin = loginStore.logins.find((l) => String(l.id) === String(node.userid))
+        if (leafLogin) leafNodes.push({ node, login: leafLogin })
+      }
+    })
+  }
+  collectLeaves(consumablesInventory.value)
+
+  await Promise.all(
+    leafNodes.map(async ({ node, login }) => {
+      try {
+        const response = await axios.get(`/api/consumables/${node.id}`, {
+          headers: { Authorization: `Bearer ${login.access_token}` },
+        })
+        // Handle both wrapped and flat response shapes
+        node.stockLevel =
+          response.data.consumable?.stockLevel ?? response.data.stockLevel ?? null
+      } catch (error) {
+        console.error(`Failed to fetch stock level for consumable ${node.id}:`, error)
+      }
+    }),
+  )
+}
+
+const getLeafNodes = (nodes) => {
+  const leaves = []
+  for (const node of nodes) {
+    if (!node.children || node.children.length === 0) {
+      leaves.push(node)
+    } else {
+      leaves.push(...getLeafNodes(node.children))
+    }
+  }
+  return leaves
+}
+
+const computeMinAvailability = (stockLevel, allPackLists, startDate, endDate) => {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  let minAvailable = stockLevel
+  for (let d = new Date(start); d <= end; d = new Date(d.setDate(d.getDate() + 1))) {
+    const dateStr = d.toISOString().slice(0, 10)
+    let available = stockLevel
+    allPackLists.forEach((pl) => {
+      if (dateStr >= pl.startDate && dateStr <= pl.endDate) {
+        available -= pl.quantity
+      }
+    })
+    if (available < minAvailable) minAvailable = available
+  }
+  return minAvailable
+}
+
+const fetchAvailabilityForLeaves = async (leaves, apiPath, startDate, endDate) => {
+  const newAvailability = {}
+  const batchSize = 6
+  for (let i = 0; i < leaves.length; i += batchSize) {
+    const batch = leaves.slice(i, i + batchSize)
+    const results = await Promise.allSettled(
+      batch.map(async (leaf) => {
+        const loginForItem = loginStore.logins.find((l) => String(l.id) === String(leaf.userid))
+        if (!loginForItem?.access_token) return null
+
+        const tryFetch = async (path) => {
+          const response = await axios.get(`${path}/${leaf.id}`, {
+            headers: { Authorization: `Bearer ${loginForItem.access_token}` },
+          })
+          const item = response.data.rental || response.data.consumable
+          if (!item || item.stockLevel == null) return null
+          const allPackLists = [
+            ...(response.data.activePackLists || []),
+            ...(response.data.archivedPackLists || []),
+          ]
+          const available =
+            startDate && endDate
+              ? computeMinAvailability(item.stockLevel, allPackLists, startDate, endDate)
+              : item.stockLevel
+          return { id: leaf.id, available }
+        }
+
+        // Try the primary endpoint first; fall back to /api/rentals if it fails or
+        // returns no recognisable item (consumable IDs may share the rental ID space)
+        try {
+          const result = await tryFetch(apiPath)
+          if (result) return result
+        } catch {
+          // primary endpoint failed – fall through to fallback
+        }
+
+        if (apiPath !== '/api/rentals') {
+          try {
+            return await tryFetch('/api/rentals')
+          } catch {
+            return null
+          }
+        }
+
+        return null
+      }),
+    )
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        newAvailability[result.value.id] = result.value.available
+      } else if (result.status === 'rejected') {
+        console.error(`Failed to fetch availability for ${batch[index].id}`, result.reason)
+      }
+    })
+    inventoryAvailability.value = { ...inventoryAvailability.value, ...newAvailability }
+  }
+}
+
+const fetchAllAvailability = async () => {
+  if (!inventory.value.length && !consumablesInventory.value.length) return
+  loadingAvailability.value = true
+  inventoryAvailability.value = {}
+  const startDate = currentPacklist.value?.startDate
+  const endDate = currentJobEndDate.value || startDate
+  await Promise.all([
+    fetchAvailabilityForLeaves(getLeafNodes(inventory.value), '/api/rentals', startDate, endDate),
+    fetchAvailabilityForLeaves(
+      getLeafNodes(consumablesInventory.value),
+      '/api/consumables',
+      startDate,
+      endDate,
+    ),
+  ])
+  loadingAvailability.value = false
+}
+
+const openAddExtraDialog = async (packlist) => {
+  currentPacklist.value = packlist
+  currentJobEndDate.value = null
+  tickedRentals.value = []
+  tickedConsumables.value = []
+  filter.value = ''
+  activeTab.value = 'rentals'
+  inventoryAvailability.value = {}
+
+  // Fetch job endDate and inventory in parallel
+  const endDatePromise = axios
+    .get(`/api/jobs/details/${packlist.jobId}`, {
+      headers: { Authorization: `Bearer ${packlist.login.access_token}` },
+    })
+    .then((res) => {
+      currentJobEndDate.value = res.data.endDate || packlist.startDate
+    })
+    .catch(() => {
+      currentJobEndDate.value = packlist.startDate
+    })
+
+  await Promise.all([fetchInventory(), fetchConsumables(), endDatePromise])
+  showAddExtraDialog.value = true
+  fetchAllAvailability()
+}
+
+function findNodeById(nodes, id) {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    if (node.children) {
+      const found = findNodeById(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+const resetFilter = () => {
+  filter.value = ''
+  filterRef.value.focus()
+}
+
+const filterMethod = (node, filter) => {
+  return node.name && node.name.toLowerCase().includes(filter.toLowerCase())
+}
+
+const filterNodes = (nodes, filter) => {
+  return nodes
+    .map((node) => {
+      if (filterMethod(node, filter)) return node
+      if (node.children) {
+        const filteredChildren = filterNodes(node.children, filter)
+        if (filteredChildren.length) return { ...node, children: filteredChildren }
+      }
+      return null
+    })
+    .filter((node) => node !== null)
+}
+
+const toggleExpandAll = () => {
+  if (!isExpanded.value) {
+    inventoryTree.value?.expandAll()
+  } else {
+    inventoryTree.value?.collapseAll()
+  }
+}
+
+const toggleExpandAllConsumables = () => {
+  if (!isExpandedConsumables.value) {
+    consumablesTree.value?.expandAll()
+  } else {
+    consumablesTree.value?.collapseAll()
+  }
+}
+
+const expandAllLabel = computed(() => (isExpanded.value ? 'Collapse All' : 'Expand All'))
+const expandAllLabelConsumables = computed(() =>
+  isExpandedConsumables.value ? 'Collapse All' : 'Expand All',
+)
+
+const handleExpandedKeys = () => {
+  isExpanded.value = expandedKeysInventory.value.length > 0
+}
+
+const handleExpandedKeysConsumables = () => {
+  isExpandedConsumables.value = expandedKeysConsumables.value.length > 0
+}
+
+function markTickable(nodes) {
+  return nodes.map((node) => {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0
+    return {
+      ...node,
+      tickable: !hasChildren,
+      quantity: !hasChildren
+        ? typeof node.quantity === 'number'
+          ? node.quantity
+          : 1
+        : undefined,
+      children: hasChildren ? markTickable(node.children) : undefined,
+    }
+  })
+}
+
+const filteredInventory = computed(() => {
+  if (!filter.value) return inventory.value
+  return filterNodes(inventory.value, filter.value)
+})
+
+const filteredConsumables = computed(() => {
+  if (!filter.value) return consumablesInventory.value
+  return filterNodes(consumablesInventory.value, filter.value)
+})
+
+const filteredInventoryWithTickable = computed(() => markTickable(filteredInventory.value))
+const filteredConsumablesWithTickable = computed(() => markTickable(filteredConsumables.value))
+
+const availabilityColor = (count) => {
+  if (count > 0) return 'green'
+  if (count === 0) return 'orange'
+  return 'red'
+}
+
+const addExtra = async () => {
+  if (!currentPacklist.value) return
+  const packlistLogin = currentPacklist.value.login
+  const packlistId = currentPacklist.value.id
+
+  const rentalsToAdd = tickedRentals.value
+    .map((id) => {
+      const node = findNodeById(filteredInventoryWithTickable.value, id)
+      return node
+        ? {
+            id: node.id,
+            name: node.name,
+            quantity: node.quantity,
+            userid: node.userid,
+            supplier: node.supplier,
+          }
+        : null
+    })
+    .filter(Boolean)
+
+  const consumablesToAdd = tickedConsumables.value
+    .map((id) => {
+      const node = findNodeById(filteredConsumablesWithTickable.value, id)
+      return node
+        ? { id: node.id, name: node.name, quantity: node.quantity, userid: node.userid }
+        : null
+    })
+    .filter(Boolean)
+
+  for (const item of rentalsToAdd) {
+    const payload = {
+      packList_id: packlistId,
+      quantity: item.quantity,
+      discountMultiplier: 1,
+      out: 0,
+      note: '',
+    }
+    if (item.userid === packlistLogin.id) {
+      payload.rental_id = item.id
+      await axios.post('/api/pack-list-rentals', payload, {
+        headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
+      })
+    } else {
+      const rentalLogin = loginStore.logins.find((l) => String(l.id) === String(item.userid))
+      const response = await axios.get(`/api/rentals/${item.id}`, {
+        headers: { Authorization: `Bearer ${rentalLogin.access_token}` },
+      })
+      payload.dailyRate = response.data.rental.dailyRate
+      payload.name = item.name
+      payload.weight = response.data.rental.weight
+      payload.supplier = item.supplier
+      payload.rentedUnits = 0
+      await axios.post('/api/pack-list-subrentals', payload, {
+        headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
+      })
+    }
+  }
+
+  for (const item of consumablesToAdd) {
+    const payload = {
+      packList_id: packlistId,
+      quantity: item.quantity,
+      out: 0,
+      note: '',
+    }
+    if (item.userid === packlistLogin.id) {
+      payload.consumable_id = item.id
+      await axios.post('/api/pack-list-consumables', payload, {
+        headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
+      })
+    } else {
+      const consumableLogin = loginStore.logins.find((l) => String(l.id) === String(item.userid))
+      let itemDetails = null
+      try {
+        const response = await axios.get(`/api/consumables/${item.id}`, {
+          headers: { Authorization: `Bearer ${consumableLogin.access_token}` },
+        })
+        itemDetails = response.data.consumable || response.data.rental
+      } catch {
+        // fall back to rentals endpoint if consumables/{id} doesn't exist
+      }
+      if (!itemDetails) {
+        try {
+          const response = await axios.get(`/api/rentals/${item.id}`, {
+            headers: { Authorization: `Bearer ${consumableLogin.access_token}` },
+          })
+          itemDetails = response.data.rental || response.data.consumable
+        } catch {
+          console.error(`Failed to fetch details for consumable ${item.id}`)
+        }
+      }
+      if (!itemDetails) {
+        $q.notify({ message: `Could not fetch details for ${item.name}`, color: 'red' })
+        continue
+      }
+      payload.dailyRate = itemDetails.dailyRate
+      payload.name = item.name
+      payload.weight = itemDetails.weight
+      payload.rentedUnits = 0
+      await axios.post('/api/pack-list-subrentals', payload, {
+        headers: { Authorization: `Bearer ${packlistLogin.access_token}` },
+      })
+    }
+  }
+
+  const totalAdded = rentalsToAdd.length + consumablesToAdd.length
+  showAddExtraDialog.value = false
+  $q.notify({
+    message: `${totalAdded} extra(s) added to ${currentPacklist.value.name}.`,
+    color: 'green',
+  })
+  fetchPacklistDetailsForFilteredJobs()
+}
+
 onMounted(() => {
   fetchJobs()
 })
@@ -680,5 +1288,10 @@ onMounted(() => {
     bottom: 20px;
     right: 20px;
   }
+}
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 </style>
