@@ -675,7 +675,6 @@ const addConsumable = async () => {
       })
     }
   }
-  showAddConsumableDialog.value = false
   fetchPacklist()
   $q.notify({
     message: `${consumablesToAdd.length} consumables were added.`,
