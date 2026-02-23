@@ -653,20 +653,52 @@ const addConsumable = async () => {
     .filter(Boolean)
 
   console.log('Consumables to add:', consumablesToAdd)
+  let successCount = 0
   for (const consumable of consumablesToAdd) {
     const payload = {
       packList_id: route.params.packlistid,
-      consumable_id: consumable.id,
       quantity: consumable.quantity,
       discountMultiplier: 1,
       note: '',
     }
     try {
-      await axios.post('/api/pack-list-consumables', payload, {
-        headers: {
-          Authorization: `Bearer ${login.value.access_token}`,
-        },
-      })
+      if (consumable.userid === login.value.id) {
+        payload.consumable_id = consumable.id
+        await axios.post('/api/pack-list-consumables', payload, {
+          headers: {
+            Authorization: `Bearer ${login.value.access_token}`,
+          },
+        })
+      } else {
+        const consumableLogin = loginStore.logins.find(
+          (l) => String(l.id) === String(consumable.userid),
+        )
+        if (!consumableLogin) {
+          console.error(`Login not found for consumable ${consumable.name} (userid: ${consumable.userid})`)
+          $q.notify({
+            type: 'negative',
+            message: `Failed to add consumable: ${consumable.name} (organization not found)`,
+          })
+          continue
+        }
+        console.info(`ConsumableLogin ${consumableLogin.id} found for consumable ${consumable.name}`)
+        const response = await axios.get(`/api/consumables/${consumable.id}`, {
+          headers: {
+            Authorization: `Bearer ${consumableLogin.access_token}`,
+          },
+        })
+        console.info('Fetched consumable details:', response.data)
+        payload.dailyRate = response.data.consumable?.dailyRate ?? response.data.dailyRate
+        payload.name = consumable.name
+        payload.weight = response.data.consumable?.weight ?? response.data.weight
+        payload.rentedUnits = 0
+        await axios.post('/api/pack-list-subrentals', payload, {
+          headers: {
+            Authorization: `Bearer ${login.value.access_token}`,
+          },
+        })
+      }
+      successCount++
     } catch (error) {
       console.error(`Failed to add consumable ${consumable.name}:`, error)
       $q.notify({
@@ -675,11 +707,13 @@ const addConsumable = async () => {
       })
     }
   }
-  fetchPacklist()
-  $q.notify({
-    message: `${consumablesToAdd.length} consumables were added.`,
-    color: 'green',
-  })
+  if (successCount > 0) {
+    fetchPacklist()
+    $q.notify({
+      message: `${successCount} consumables were added.`,
+      color: 'green',
+    })
+  }
 }
 
 // Find node by ID in the inventory tree
