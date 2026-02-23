@@ -1,35 +1,37 @@
 <template>
   <q-page class="q-pa-md">
     <q-card v-for="login in loginStore.logins" :key="login.id" class="q-mb-md">
-      <q-card-section class="row items-center">
-        <q-avatar size="140px">
-          <q-img :src="login.organisationLogo" />
-        </q-avatar>
-        <div class="q-ml-md flex-grow-1">
-          <div class="text-h6">{{ login.organisation }}</div>
-          <div class="text-subtitle1">{{ login.username }}</div>
-          <div class="text-subtitle1">{{ login.firstName }} {{ login.lastName }}</div>
-          <div
-            :style="{
-              backgroundColor: login.color,
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-            }"
-          ></div>
+      <q-card-section>
+        <div class="row items-center q-gutter-sm">
+          <q-avatar size="80px">
+            <q-img :src="login.organisationLogo" />
+          </q-avatar>
+          <div class="col">
+            <div class="text-h6">{{ login.organisation }}</div>
+            <div class="text-subtitle1">{{ login.username }}</div>
+            <div class="text-subtitle1">{{ login.firstName }} {{ login.lastName }}</div>
+            <div
+              :style="{
+                backgroundColor: login.color,
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+              }"
+            ></div>
+          </div>
         </div>
-        <div class="q-ml-md">
-          <q-badge color="blue" class="q-mt-sm q-ml-md bigger-badge">
+        <div class="row wrap q-gutter-xs q-mt-sm">
+          <q-badge color="blue" class="bigger-badge">
             Inventory rentals: {{ inventoryCounts[login.organisation]?.rentals ?? 'Loading...' }}
           </q-badge>
-          <q-badge color="green" class="q-mt-sm q-ml-md bigger-badge">
+          <q-badge color="green" class="bigger-badge">
             Inventory consumables:
             {{ inventoryCounts[login.organisation]?.consumables ?? 'Loading...' }}
           </q-badge>
-          <q-badge color="orange" class="q-mt-sm q-ml-md bigger-badge">
+          <q-badge color="orange" class="bigger-badge">
             Customers: {{ inventoryCounts[login.organisation]?.customers ?? 'Loading...' }}
           </q-badge>
-          <q-badge color="red" class="q-mt-sm q-ml-md bigger-badge">
+          <q-badge color="red" class="bigger-badge">
             Jobs: {{ inventoryCounts[login.organisation]?.jobs ?? 'Loading...' }}
           </q-badge>
         </div>
@@ -128,26 +130,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
-}
-
-.q-card-section {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.q-avatar {
-  flex-shrink: 0;
-}
-
-.flex-grow-1 {
-  flex-grow: 1;
-}
-
-.q-badge {
-  margin-top: 0;
-  margin-left: auto;
-  margin: 0.2em;
 }
 
 .bigger-badge {

@@ -31,7 +31,7 @@
         <div class="text-h6" v-else>Events on {{ selectedDate }}</div>
 
         <q-card v-for="event in filteredEvents" :key="event.id">
-          <q-item-section>
+          <q-card-section class="relative-position">
             <div class="avatar-wrapper">
               <q-avatar>
                 <q-img
@@ -47,7 +47,7 @@
             </div>
             <div class="text-caption">Start Date: {{ event.startDate }}</div>
             <div class="text-caption">organisation: {{ event.organisation }}</div>
-          </q-item-section>
+          </q-card-section>
           <q-item-label header>Pack Lists</q-item-label>
           <q-list>
             <q-item v-for="packList in event.packLists" :key="packList.id">
@@ -65,7 +65,7 @@
                 <q-btn
                   color="primary"
                   label="Open"
-                  @click="navigateToPackList(packList.id, event.userid)"
+                  @click="navigateToPackList(packList.id, event.userid, event.startDate, event.endDate)"
                 />
               </q-item-section>
             </q-item>
@@ -222,8 +222,8 @@ onMounted(async () => {
 })
 
 // Function to navigate to the pack list page
-function navigateToPackList(packListId, userid) {
-  router.push(`/packlist/${packListId}/${userid}`)
+function navigateToPackList(packListId, userid, startDate, endDate) {
+  router.push({ path: `/packlist/${packListId}/${userid}`, query: { startDate, endDate } })
 }
 </script>
 
@@ -231,6 +231,10 @@ function navigateToPackList(packListId, userid) {
 .q-card {
   max-width: 600px;
   margin: 0 auto 20px auto;
+}
+
+.relative-position {
+  position: relative;
 }
 
 .avatar-wrapper {

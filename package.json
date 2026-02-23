@@ -18,7 +18,7 @@
     "@primevue/themes": "^4.2.5",
     "@quasar/cli": "^2.4.1",
     "@quasar/extras": "^1.17.0",
-    "axios": "^1.8.2",
+    "axios": "^1.13.5",
     "pinia": "^2.0.11",
     "primevue": "^4.2.5",
     "quasar": "^2.18.1",
