@@ -1212,7 +1212,7 @@
   dependencies:
     "@primeuix/styled" "^0.3.2"
 
-"@quasar/app-vite@^2.5.4":
+"@quasar/app-vite@^2.3.0":
   version "2.5.4"
   resolved "https://registry.yarnpkg.com/@quasar/app-vite/-/app-vite-2.5.4.tgz#5133dab531b801e79a764bf1212bf270006db92e"
   integrity sha512-Oha67uMX6rAfzwC3FOkzfhjyD9+vMyYZN90RpHbQqhV3wc36bccAOfUT5gMbnhHIFKz1asno29u3xRRfp8RMmw==
@@ -5837,7 +5837,7 @@ send@~0.19.0, send@~0.19.1:
     range-parser "~1.2.1"
     statuses "~2.0.2"
 
-serialize-javascript@^7.0.4:
+serialize-javascript@^7.0.0, serialize-javascript@^7.0.4:
   version "7.0.5"
   resolved "https://registry.yarnpkg.com/serialize-javascript/-/serialize-javascript-7.0.5.tgz#c798cc0552ffbb08981914a42a8756e339d0d5b1"
   integrity sha512-F4LcB0UqUl1zErq+1nYEEzSHJnIwb3AF2XWB94b+afhrekOUijwooAYqFyRbjYkm2PAKBabx6oYv/xDxNi8IBw==
