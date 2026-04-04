@@ -9,6 +9,7 @@ const routes = [
       { path: '/login-manager', component: () => import('pages/LoginManager.vue') },
       { path: '/checkin', component: () => import('src/pages/warehouseCheckin.vue') },
       { path: '/checkout', component: () => import('src/pages/warehouseCheckout.vue') },
+      { path: '/scan', component: () => import('src/pages/ScanPage.vue') },
       {
         path: '/packlist/:packlistid/:userid',
         component: () => import('pages/packlistDetail.vue'),
