@@ -42,6 +42,51 @@
           />
         </div>
       </q-card-section>
+      <!-- Scan to check out section -->
+      <q-card-section>
+        <q-expansion-item
+          v-model="scanPanelOpen"
+          icon="qr_code_scanner"
+          label="Scan to check out"
+          header-class="text-primary"
+        >
+          <q-card flat bordered class="q-mt-sm">
+            <q-card-section class="q-pb-none">
+              <q-select
+                v-if="scanLoginOptions.length > 1"
+                v-model="scanLoginId"
+                :options="scanLoginOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                label="Organisation"
+                dense
+                outlined
+                style="min-width: 200px"
+                class="q-mb-sm"
+              />
+            </q-card-section>
+            <q-card-section>
+              <ScanPanel :loading="scanLoading" @scanned="onScanOut" />
+            </q-card-section>
+            <q-card-section v-if="scanResult" class="q-pt-none">
+              <q-banner
+                :class="scanResult.success ? 'bg-green-1 text-green-9' : 'bg-red-1 text-red-9'"
+                rounded
+              >
+                <template v-slot:avatar>
+                  <q-icon :name="scanResult.success ? 'check_circle' : 'error'" />
+                </template>
+                <div class="text-subtitle2">{{ scanResult.message }}</div>
+                <div v-if="scanResult.code" class="text-caption q-mt-xs">
+                  Code: {{ scanResult.code }}
+                </div>
+              </q-banner>
+            </q-card-section>
+          </q-card>
+        </q-expansion-item>
+      </q-card-section>
       <q-card-section>
         <q-card v-for="packlist in sortedPacklists" :key="packlist.id" class="nested-card">
           <q-card-section class="relative-position">
@@ -504,6 +549,7 @@ import axios from 'axios'
 import { useQuasar } from 'quasar'
 import { getIcon } from 'src/utils/getIcon'
 import { closestQuasarColor } from 'src/utils/colorUtils'
+import ScanPanel from 'src/components/ScanPanel.vue'
 
 // Define the login store
 const loginStore = useLoginStore()
@@ -543,6 +589,61 @@ watch(sortBy, (val) => localStorage.setItem('checkoutSortBy', val))
 // Refresh login tokens
 loginStore.checkAndRefreshTokens()
 loginStore.startTokenRefresh()
+
+// ── Scan to check-out state ──────────────────────────────────────────────────
+const scanPanelOpen = ref(false)
+const scanLoginId = ref(loginStore.logins[0]?.id ?? null)
+const scanLoginOptions = computed(() =>
+  loginStore.logins.map((l) => ({ label: l.organisation || l.username, value: l.id })),
+)
+// Keep scanLoginId pointing at a valid login when logins change
+watch(
+  () => loginStore.logins,
+  (logins) => {
+    if (scanLoginId.value === null && logins.length > 0) {
+      scanLoginId.value = logins[0].id
+    } else if (!logins.find((l) => l.id === scanLoginId.value)) {
+      scanLoginId.value = logins[0]?.id ?? null
+    }
+  },
+)
+const activeScanLogin = computed(() => loginStore.logins.find((l) => l.id === scanLoginId.value))
+const scanLoading = ref(false)
+const scanResult = ref(null)
+
+const onScanOut = async (code) => {
+  if (scanLoading.value) return
+  if (!activeScanLogin.value?.access_token) {
+    $q.notify({ message: 'No organisation selected or not logged in', color: 'red' })
+    return
+  }
+  scanLoading.value = true
+  scanResult.value = null
+  try {
+    const response = await axios.post(
+      '/api/scan',
+      { code, direction: 'out' },
+      { headers: { Authorization: `Bearer ${activeScanLogin.value.access_token}` } },
+    )
+    scanResult.value = {
+      success: true,
+      message: response.data?.message ?? `Successfully scanned: ${code}`,
+      code,
+    }
+    $q.notify({ message: scanResult.value.message, color: 'green' })
+    // Refresh packlist data to reflect updated quantities
+    await fetchPacklistDetailsForFilteredJobs()
+  } catch (error) {
+    const message =
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      `Failed to scan code: ${code}`
+    scanResult.value = { success: false, message, code }
+    $q.notify({ message, color: 'red' })
+  } finally {
+    scanLoading.value = false
+  }
+}
 
 // Define columns for the tables
 const rentalColumns = [
