@@ -57,6 +57,13 @@
           <q-item-section>Warehouse check out</q-item-section>
         </q-item>
 
+        <q-item clickable to="/scan">
+          <q-item-section avatar>
+            <q-icon name="qr_code_scanner" />
+          </q-item-section>
+          <q-item-section>Scan</q-item-section>
+        </q-item>
+
         <q-item clickable to="/login-manager">
           <q-item-section avatar>
             <q-icon name="manage_accounts" />
