@@ -106,7 +106,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 
-defineProps({
+const props = defineProps({
   loading: {
     type: Boolean,
     default: false,
@@ -151,7 +151,7 @@ const keyboardInputRef = ref(null)
 
 const onKeyboardEnter = () => {
   const code = keyboardInput.value?.trim()
-  if (!code) return
+  if (!code || props.loading) return
   keyboardInput.value = ''
   emit('scanned', code)
   nextTick(() => keyboardInputRef.value?.focus())
@@ -171,6 +171,7 @@ let cameraStream = null
 let scanAnimationId = null
 let lastScannedCode = null
 let lastScanTime = 0
+let cameraStartToken = 0
 
 const startCameraScanning = () => {
   if (!barcodeDetector || !videoRef.value) return
@@ -210,6 +211,7 @@ const stopCameraScanning = () => {
 }
 
 const stopCameraStream = () => {
+  cameraStartToken++ // invalidate any in-progress startCamera
   stopCameraScanning()
   if (cameraStream) {
     cameraStream.getTracks().forEach((t) => t.stop())
@@ -222,12 +224,21 @@ const stopCameraStream = () => {
 }
 
 const startCamera = async (deviceId) => {
+  const token = ++cameraStartToken
   cameraLoading.value = true
   try {
     const constraints = {
       video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' },
     }
-    cameraStream = await navigator.mediaDevices.getUserMedia(constraints)
+    const stream = await navigator.mediaDevices.getUserMedia(constraints)
+
+    // Stale startup (tab switched away or a newer start was requested) — discard the stream
+    if (token !== cameraStartToken) {
+      stream.getTracks().forEach((t) => t.stop())
+      return
+    }
+
+    cameraStream = stream
     videoRef.value.srcObject = cameraStream
 
     // Enumerate cameras after first getUserMedia (permissions are now granted)
@@ -235,15 +246,32 @@ const startCamera = async (deviceId) => {
       await enumerateCameras()
     }
 
+    // Check after enumerateCameras in case the startup became stale during the await
+    if (token !== cameraStartToken) {
+      stopCameraStream()
+      return
+    }
+
     await new Promise((resolve) => {
       videoRef.value.onloadedmetadata = resolve
     })
+
+    // Check again after the async waits
+    if (token !== cameraStartToken) {
+      stopCameraStream()
+      return
+    }
+
     cameraActive.value = true
     startCameraScanning()
   } catch (error) {
-    $q.notify({ message: `Camera error: ${error.message}`, color: 'red' })
+    if (token === cameraStartToken) {
+      $q.notify({ message: `Camera error: ${error.message}`, color: 'red' })
+    }
   } finally {
-    cameraLoading.value = false
+    if (token === cameraStartToken) {
+      cameraLoading.value = false
+    }
   }
 }
 

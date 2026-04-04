@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useLoginStore } from 'src/stores/loginStore'
 import { useQuasar } from 'quasar'
 import axios from 'axios'
@@ -82,6 +82,16 @@ const loginOptions = computed(() =>
   })),
 )
 const selectedLogin = ref(loginStore.logins[0]?.id ?? null)
+watch(
+  () => loginStore.logins,
+  (logins) => {
+    if (selectedLogin.value === null && logins.length > 0) {
+      selectedLogin.value = logins[0].id
+    } else if (!logins.find((l) => l.id === selectedLogin.value)) {
+      selectedLogin.value = logins[0]?.id ?? null
+    }
+  },
+)
 const activeLogin = computed(() => loginStore.logins.find((l) => l.id === selectedLogin.value))
 
 // ── Scan direction ──────────────────────────────────────────────────────────
