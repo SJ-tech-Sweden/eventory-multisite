@@ -388,7 +388,7 @@
 
 "@hono/node-server@^2.1.0":
   version "2.1.1"
-  resolved "https://registry.npmjs.org/@hono/node-server/-/node-server-2.1.1.tgz"
+  resolved "https://registry.yarnpkg.com/@hono/node-server/-/node-server-2.1.1.tgz#9cfa8649e9ecbcd48edf505b103002402ea51e70"
   integrity sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==
 
 "@humanfs/core@^0.19.2":
@@ -1127,10 +1127,10 @@
   resolved "https://registry.yarnpkg.com/@quasar/art/-/art-1.0.0.tgz#29c23715d730b55a40d42e69672129634862e603"
   integrity sha512-IAV8Qg2QM3U2alywUcCELyOlHCUNbJYmiVDRTLgcgmyBlQwo3Wk33eHAyT9cpnV5CqlmuYXe6UZt0Ybi1m0lMA==
 
-"@quasar/cli@^5.0.0":
-  version "5.0.7"
-  resolved "https://registry.npmjs.org/@quasar/cli/-/cli-5.0.7.tgz"
-  integrity sha512-aN0Uy7NLiQ5I0bcCEqKyO+p7Ef480kdii0aewHb2qzDPAa4zk+LW2CQrmc9Sd5Ip3DPOb3wMO/Z8Z+MytjuIog==
+"@quasar/cli@^5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@quasar/cli/-/cli-5.0.8.tgz#dbd4324d7adf11e29cbfe70dcffaf5ca20f9133c"
+  integrity sha512-/ShglvEX2y48JeQQ+dN/v6e1SWBgfPMdZEzFChz7KqNrc4zfkBtXzBz0G2IVSW78gGUcb3KNnk977mv7HPF1bg==
   dependencies:
     "@clack/prompts" "^1.7.0"
     "@hono/node-server" "^2.1.0"
@@ -1140,9 +1140,9 @@
     ci-info "^4.4.0"
     cross-spawn "^7.0.6"
     fs-extra "^11.4.0"
-    hono "^4.13.0"
+    hono "^4.13.7"
     kolorist "^1.8.0"
-    open "^11.0.0"
+    open "^11.0.2"
 
 "@quasar/extras@^2.0.0":
   version "2.0.4"
@@ -1180,7 +1180,7 @@
 
 "@quasar/update-notifier@^1.0.0":
   version "1.0.0"
-  resolved "https://registry.npmjs.org/@quasar/update-notifier/-/update-notifier-1.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/@quasar/update-notifier/-/update-notifier-1.0.0.tgz#dc5d3b86f31e4c73e6d8fb8947f5e069ec75301e"
   integrity sha512-+DivJjx8aTy8dNsTxJJ1HJNxy3gqjKhuBIODULk1CRwzHzGAjZKnhvMagxXX6y6tT35gB1s4daXSD6sxz/+Cug==
   dependencies:
     ci-info "^4.4.0"
@@ -2759,10 +2759,10 @@ hasown@^2.0.2, hasown@^2.0.4:
   dependencies:
     function-bind "^1.1.2"
 
-hono@^4.13.0:
-  version "4.13.2"
-  resolved "https://registry.npmjs.org/hono/-/hono-4.13.2.tgz"
-  integrity sha512-JydRilDRkYBQMt9qR9U92mXxmbGqsqSn/IKOrh4e7/gEbn+0zSr8igTu0obwJoNGN4sez28DIql7FBHWydoJpA==
+hono@^4.13.7:
+  version "4.13.7"
+  resolved "https://registry.yarnpkg.com/hono/-/hono-4.13.7.tgz#80fdab8326f03d02f049117fd968101933493600"
+  integrity sha512-c8/gF9ac8Y78/agExVocyLevgR+JlpNB444Py0FSX8pJoPdYUfUzRcXtYEYGwt6l19qIlVZPN5Mfsw9jFShmQQ==
 
 hookable@^5.5.3:
   version "5.5.3"
@@ -4279,7 +4279,7 @@ semver@^6.3.1:
 
 semver@^7.5.3, semver@^7.5.4, semver@^7.6.3, semver@^7.7.2, semver@^7.8.5:
   version "7.8.5"
-  resolved "https://registry.yarnpkg.com/semver/-/semver-7.8.5.tgz#39b646037dd50c14fb451e7e4cac58ed8b863f69"
+  resolved "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
   integrity sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==
 
 send@^1.2.0:
